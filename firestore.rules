@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Matches the schema in blueprint section 19:
+//   users/{uid}
+//     watchHistory/{entry}
+//     achievements/{entry}
+//     quests/{entry}
+//     collections/{entry}
+//
+// Any signed-in user can read any profile (needed for the leaderboard
+// and public profiles), but you can only write to your own document
+// and its subcollections.
+//
+// Not auto-deployed — paste this into Firestore > Rules in the console,
+// or `firebase deploy --only firestore:rules` if you've run `firebase init`.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      match /{subcollection}/{docId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+name: cinequest
+description: "A gamified movie-tracking app — level up your cinema life."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  provider: ^6.1.2
+
+  # Firebase — Phase 1 needs Auth + Firestore (user docs).
+  # firebase_storage, geolocator, google_maps_flutter, and camera join
+  # later, in Phase 5 (Camera, Location) and wherever avatar upload lands.
+  firebase_core: ^4.9.0
+  firebase_auth: ^6.5.3
+  cloud_firestore: ^6.1.2
+
+  # TMDB
+  http: ^1.3.0
+
+  # UI
+  google_fonts: ^8.0.2
+  cached_network_image: ^3.4.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
