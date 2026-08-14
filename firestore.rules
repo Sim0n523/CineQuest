@@ -2,17 +2,15 @@ rules_version = '2';
 
 // Matches the schema in blueprint section 19:
 //   users/{uid}
-//     watchHistory/{entry}
-//     achievements/{entry}
-//     quests/{entry}
-//     collections/{entry}
+//     watchHistory/{entry}   <- Phase 2
+//     watchlist/{entry}      <- Phase 2
+//     achievements/{entry}   <- Phase 3
+//     quests/{entry}         <- Phase 4
+//     collections/{entry}    <- Phase 3
 //
-// Any signed-in user can read any profile (needed for the leaderboard
-// and public profiles), but you can only write to your own document
-// and its subcollections.
-//
-// Not auto-deployed — paste this into Firestore > Rules in the console,
-// or `firebase deploy --only firestore:rules` if you've run `firebase init`.
+// The {subcollection} wildcard below already covers watchHistory and
+// watchlist (and everything added in later phases) — unchanged since
+// Phase 1, nothing new needed here.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {

@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../models/movie_model.dart';
 import '../repositories/movie_repository.dart';
-
-enum LoadStatus { initial, loading, loaded, error }
+import '../../utils/discover_sort.dart';
+import 'load_status.dart';
 
 class MovieProvider extends ChangeNotifier {
   final MovieRepository _repository;
@@ -13,14 +13,14 @@ class MovieProvider extends ChangeNotifier {
   List<MovieModel> trending = [];
   List<MovieModel> popular = [];
   List<MovieModel> searchResults = [];
+  List<MovieModel> discoverResults = [];
 
   LoadStatus trendingStatus = LoadStatus.initial;
   LoadStatus popularStatus = LoadStatus.initial;
   LoadStatus searchStatus = LoadStatus.initial;
+  LoadStatus discoverStatus = LoadStatus.initial;
   String? errorMessage;
 
-  /// Loads both home rows in parallel. Safe to call repeatedly (e.g. on
-  /// pull-to-refresh) — each call simply replaces the previous results.
   Future<void> loadHome() async {
     trendingStatus = LoadStatus.loading;
     popularStatus = LoadStatus.loading;
@@ -58,6 +58,22 @@ class MovieProvider extends ChangeNotifier {
       searchStatus = LoadStatus.loaded;
     } catch (e) {
       searchStatus = LoadStatus.error;
+      errorMessage = e.toString();
+    }
+    notifyListeners();
+  }
+
+  /// Called whenever Discover's genre or sort selection changes — the
+  /// screen owns which filter is currently selected and passes the full
+  /// desired state each time, rather than this provider tracking it.
+  Future<void> loadDiscover({required int? genreId, required DiscoverSort sort}) async {
+    discoverStatus = LoadStatus.loading;
+    notifyListeners();
+    try {
+      discoverResults = await _repository.discover(genreId: genreId, sort: sort);
+      discoverStatus = LoadStatus.loaded;
+    } catch (e) {
+      discoverStatus = LoadStatus.error;
       errorMessage = e.toString();
     }
     notifyListeners();

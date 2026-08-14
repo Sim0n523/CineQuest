@@ -2,7 +2,6 @@ class AppConstants {
   AppConstants._();
 
   // --- TMDB ---
-  // Get a free key at https://www.themoviedb.org/settings/api
   static const String tmdbApiKey = '8fb06c7cadbf317c40320746d7d2d9cf';
   static const String tmdbBaseUrl = 'https://api.themoviedb.org/3';
   static const String tmdbImageBaseUrl = 'https://image.tmdb.org/t/p/w500';

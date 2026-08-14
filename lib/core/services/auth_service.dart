@@ -2,10 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 
-/// Wraps FirebaseAuth plus the matching Firestore user document.
-/// AuthProvider is the only thing that should call this directly —
-/// nothing above the provider layer should import firebase_auth or
-/// cloud_firestore for account data.
 class AuthService {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
@@ -37,8 +33,6 @@ class AuthService {
 
     await credential.user?.updateDisplayName(username);
 
-    // Seed the user document. XP/level/stats all start at zero —
-    // ProgressionService takes over from here once movie logging exists.
     await _firestore.collection('users').doc(credential.user!.uid).set({
       'username': username,
       'email': email,
@@ -57,8 +51,6 @@ class AuthService {
     return credential;
   }
 
-  /// Fetches the Firestore profile for a signed-in user, or null if the
-  /// document doesn't exist (e.g. it hasn't been written yet).
   Future<UserModel?> fetchUserProfile(String uid) async {
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists || doc.data() == null) return null;

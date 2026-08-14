@@ -1,8 +1,3 @@
-/// Mirrors the Firestore `users/{uid}` document (blueprint section 19):
-/// auth info, XP/level, and the denormalized stats shown on the profile.
-///
-/// XP/level/stats all start at zero on registration. Nothing writes to
-/// them yet — that's ProgressionService's job starting in Phase 3.
 class UserModel {
   final String uid;
   final String username;
@@ -12,8 +7,6 @@ class UserModel {
   final int level;
   final DateTime createdAt;
 
-  // Denormalized stats (blueprint section 17), kept on the user document
-  // so the profile and leaderboard can be read without extra queries.
   final int moviesWatched;
   final int reviewsWritten;
   final int currentStreak;

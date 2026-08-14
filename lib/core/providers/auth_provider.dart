@@ -2,12 +2,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
+import '../models/watch_history_entry.dart';
 import '../services/auth_service.dart';
+import '../services/progression_service.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
+  final ProgressionService _progressionService;
 
   AuthStatus status = AuthStatus.unknown;
   UserModel? currentUser;
@@ -16,8 +19,9 @@ class AuthProvider extends ChangeNotifier {
 
   StreamSubscription<User?>? _authSub;
 
-  AuthProvider({AuthService? authService})
-      : _authService = authService ?? AuthService() {
+  AuthProvider({AuthService? authService, ProgressionService? progressionService})
+      : _authService = authService ?? AuthService(),
+        _progressionService = progressionService ?? ProgressionService() {
     _authSub = _authService.authStateChanges.listen(_onAuthChanged);
   }
 
@@ -33,10 +37,6 @@ class AuthProvider extends ChangeNotifier {
     if (profile != null) {
       currentUser = profile;
     }
-    // If the doc doesn't exist yet (e.g. this fires mid-registration,
-    // before the Firestore write completes), keep whatever currentUser
-    // already is — register() below fills it in directly rather than
-    // waiting on this listener, to avoid that race.
     status = AuthStatus.authenticated;
     notifyListeners();
   }
@@ -99,6 +99,40 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() => _authService.signOut();
+
+  /// Only called for a brand-new log, never an edit — see the note on
+  /// ProgressionService for why. Returns null (rather than throwing) if
+  /// progression fails, since the movie itself is already logged either
+  /// way by this point; it isn't worth blocking that on a stats update.
+  Future<ProgressionResult?> recordMovieLogged({
+    required List<WatchHistoryEntry> updatedHistory,
+    required bool wroteReview,
+  }) async {
+    final user = currentUser;
+    if (user == null) return null;
+
+    try {
+      final result = await _progressionService.processMovieLogged(
+        uid: user.uid,
+        updatedHistory: updatedHistory,
+        wroteReview: wroteReview,
+        currentXp: user.xp,
+      );
+
+      currentUser = user.copyWith(
+        xp: result.newXp,
+        level: result.newLevel,
+        moviesWatched: updatedHistory.length,
+        reviewsWritten:
+            updatedHistory.where((e) => (e.review ?? '').trim().isNotEmpty).length,
+        achievementsUnlocked: result.totalAchievementsUnlocked,
+      );
+      notifyListeners();
+      return result;
+    } catch (e) {
+      return null;
+    }
+  }
 
   @override
   void dispose() {

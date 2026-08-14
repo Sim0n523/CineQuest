@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/providers/auth_provider.dart';
 import '../core/providers/movie_provider.dart';
+import '../core/providers/load_status.dart';
 import '../core/models/movie_model.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';

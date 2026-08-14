@@ -1,9 +1,5 @@
 import '../../utils/app_constants.dart';
 
-/// A movie as returned by TMDB. Covers the fields shared by the
-/// trending/popular/search endpoints and the single-movie details
-/// endpoint (which additionally includes `runtime` and `genres` instead
-/// of `genre_ids`).
 class MovieModel {
   final int id;
   final String title;
@@ -13,7 +9,7 @@ class MovieModel {
   final double voteAverage;
   final DateTime? releaseDate;
   final List<int> genreIds;
-  final int? runtime; // minutes; only present from the details endpoint
+  final int? runtime;
 
   const MovieModel({
     required this.id,

@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../core/providers/auth_provider.dart';
+import '../core/providers/watch_history_provider.dart';
 import 'home_screen.dart';
 import 'discover_screen.dart';
 import 'quests_screen.dart';
 import 'leaderboard_screen.dart';
 import 'profile_screen.dart';
 
-/// The 5-tab shell from blueprint section 9: Home, Discover, Quests,
-/// Leaderboard, Profile. Everything else opens from these.
-///
-/// Uses IndexedStack rather than swapping widgets so each tab keeps its
-/// scroll position and provider-driven state when you switch away and back.
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -27,6 +25,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     LeaderboardScreen(),
     ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final uid = context.read<AuthProvider>().currentUser?.uid;
+      if (uid != null) {
+        context.read<WatchHistoryProvider>().loadAll(uid);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

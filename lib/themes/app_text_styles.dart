@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Type scale for CineQuest, built on Inter (blueprint section 10).
-///
-/// Getters (not const fields) because GoogleFonts.inter() isn't a
-/// const constructor — it resolves/caches the font at call time.
 class AppTextStyles {
   AppTextStyles._();
 

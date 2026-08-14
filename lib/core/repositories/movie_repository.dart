@@ -1,10 +1,7 @@
 import '../models/movie_model.dart';
 import '../services/tmdb_service.dart';
+import '../../utils/discover_sort.dart';
 
-/// Thin layer over TMDBService. Today it just forwards calls, but it's
-/// the seam where local caching (a Firestore "recently viewed" cache,
-/// offline support, combining TMDB with our own Firestore data) gets
-/// added later without touching providers or screens.
 class MovieRepository {
   final TMDBService _tmdbService;
 
@@ -21,4 +18,7 @@ class MovieRepository {
 
   Future<MovieModel> fetchDetails(int movieId) =>
       _tmdbService.getMovieDetails(movieId);
+
+  Future<List<MovieModel>> discover({int? genreId, DiscoverSort sort = DiscoverSort.popular}) =>
+      _tmdbService.discoverMovies(genreId: genreId, sortBy: sort.apiValue);
 }

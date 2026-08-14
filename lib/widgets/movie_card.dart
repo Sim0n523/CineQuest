@@ -4,13 +4,6 @@ import '../core/models/movie_model.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 
-/// The single card used everywhere a movie poster shows up. Keeping it
-/// in one place means the "premium, game-inspired" poster styling
-/// (blueprint section 10) only has to be tuned once.
-///
-/// Two layouts:
-/// - Default (expand: false): fixed width, for horizontal scrolling rows.
-/// - expand: true: fills the parent's width, for use inside a GridView.
 class MovieCard extends StatelessWidget {
   final MovieModel movie;
   final VoidCallback? onTap;

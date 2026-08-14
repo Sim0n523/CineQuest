@@ -3,10 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_text_styles.dart';
 
-/// The single ThemeData for CineQuest — dark, cinematic, gold-accented
-/// (blueprint section 10). Screens should pull styling from here via
-/// Theme.of(context) or the AppTextStyles/AppColors helpers directly,
-/// rather than hardcoding values inline.
 class AppTheme {
   AppTheme._();
 
@@ -38,9 +34,6 @@ class AppTheme {
         selectedLabelStyle: AppTextStyles.caption,
         unselectedLabelStyle: AppTextStyles.caption,
       ),
-      // NOTE: ThemeData.cardTheme takes a CardThemeData (not CardTheme) as
-      // of current Flutter releases — see Flutter's "component theme
-      // normalization" breaking change if this ever looks wrong on your SDK.
       cardTheme: CardThemeData(
         color: AppColors.card,
         elevation: 0,

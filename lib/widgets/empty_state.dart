@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 
-/// An empty screen is an invitation to act, not just a dead end — so
-/// this always pairs an icon and headline with one plain-language
-/// sentence saying what's coming and why it isn't here yet.
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;

@@ -12,8 +12,6 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        // Once the first real auth state arrives, redirect. Deferred to
-        // after the frame since we can't navigate mid-build.
         if (auth.status != AuthStatus.unknown) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!context.mounted) return;
