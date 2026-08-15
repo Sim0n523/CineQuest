@@ -1,7 +1,7 @@
 name: cinequest
 description: "A gamified movie-tracking app — level up your cinema life."
 publish_to: 'none'
-version: 0.3.0+1
+version: 0.4.0+1
 
 environment:
   sdk: '>=3.6.0 <4.0.0'

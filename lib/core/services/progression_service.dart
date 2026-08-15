@@ -3,12 +3,20 @@ import '../models/watch_history_entry.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/xp_config.dart';
 import '../../utils/achievement_config.dart';
+import '../../utils/quest_config.dart';
+import '../models/quest_period_state.dart';
 import 'achievement_service.dart';
+import 'quest_service.dart';
 
 class UnlockedAchievement {
   final AchievementDefinition definition;
   final int tier;
   const UnlockedAchievement({required this.definition, required this.tier});
+}
+
+class CompletedQuest {
+  final QuestTemplate template;
+  const CompletedQuest({required this.template});
 }
 
 class ProgressionResult {
@@ -18,6 +26,7 @@ class ProgressionResult {
   final bool leveledUp;
   final int totalAchievementsUnlocked;
   final List<UnlockedAchievement> newlyUnlockedAchievements;
+  final List<CompletedQuest> newlyCompletedQuests;
 
   const ProgressionResult({
     required this.xpGained,
@@ -26,26 +35,32 @@ class ProgressionResult {
     required this.leveledUp,
     required this.totalAchievementsUnlocked,
     required this.newlyUnlockedAchievements,
+    required this.newlyCompletedQuests,
   });
 }
 
 /// Owns everything that happens when a movie gets logged for the first
-/// time: XP, level recalculation, and achievement tier checks. Nothing
-/// else should award XP or unlock achievements directly — matches
+/// time: XP, level recalculation, achievement tier checks, AND quest
+/// completion checks. Nothing else should award XP directly — matches
 /// blueprint section 7: "MovieService should never directly unlock
 /// achievements... everything flows through the ProgressionService."
+/// Quest completion (+250/+500 XP per section 12) flows through here
+/// too, for the same reason.
 ///
-/// Only called on a brand-new log, never an edit — editing an existing
-/// entry (e.g. adding a review after the fact) doesn't re-trigger XP or
-/// achievement checks. That's a deliberate simplification: re-checking
-/// on every edit would let repeated edits farm XP, and "Watch Movie" /
-/// "Review Movie" read most naturally as one-time actions tied to the
-/// initial log.
+/// Only called on a brand-new log, never an edit — see the note on
+/// this class from Phase 3 for why (repeated edits shouldn't farm XP).
 class ProgressionService {
   final FirebaseFirestore _firestore;
+  final QuestService _questService;
 
-  ProgressionService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  ProgressionService({FirebaseFirestore? firestore, QuestService? questService})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _questService = questService ?? QuestService();
+
+  /// Exposed so the Quests screen can fetch/generate the current
+  /// period's set on its own (e.g. just opening the tab), independent
+  /// of whether a movie was just logged.
+  Future<QuestBundle> ensureCurrentQuests(String uid) => _questService.ensureCurrentQuests(uid);
 
   Future<ProgressionResult> processMovieLogged({
     required String uid,
@@ -56,13 +71,14 @@ class ProgressionService {
     int xpGained = AppConstants.xpWatchMovie;
     if (wroteReview) xpGained += AppConstants.xpReviewMovie;
 
+    // --- Achievements ---
     final achievementsRef = _firestore.collection('users').doc(uid).collection('achievements');
-    final snapshot = await achievementsRef.get();
+    final achievementSnapshot = await achievementsRef.get();
 
     final currentTiers = <AchievementCategory, int>{
       for (final def in achievementDefinitions) def.category: 0,
     };
-    for (final doc in snapshot.docs) {
+    for (final doc in achievementSnapshot.docs) {
       try {
         final category = AchievementCategory.values.byName(doc.id);
         currentTiers[category] = (doc.data()['unlockedTier'] as int?) ?? 0;
@@ -72,7 +88,7 @@ class ProgressionService {
     }
 
     final updatedTiers = Map<AchievementCategory, int>.from(currentTiers);
-    final newlyUnlocked = <UnlockedAchievement>[];
+    final newlyUnlockedAchievements = <UnlockedAchievement>[];
 
     for (final def in achievementDefinitions) {
       final currentValue = AchievementService.currentValueFor(def.category, updatedHistory);
@@ -81,15 +97,37 @@ class ProgressionService {
 
       if (newTier > previousTier) {
         updatedTiers[def.category] = newTier;
-        // Usually crosses one tier at a time, but a long movie could
-        // push Hours Watched up several tiers in a single log — award
-        // XP for every tier actually crossed.
         xpGained += AppConstants.xpAchievementUnlock * (newTier - previousTier);
-        newlyUnlocked.add(UnlockedAchievement(definition: def, tier: newTier));
+        newlyUnlockedAchievements.add(UnlockedAchievement(definition: def, tier: newTier));
         await achievementsRef.doc(def.category.name).set({'unlockedTier': newTier});
       }
     }
 
+    // --- Quests ---
+    final questBundle = await _questService.ensureCurrentQuests(uid);
+    final newlyCompletedQuests = <CompletedQuest>[];
+
+    for (final periodState in [questBundle.weekly, questBundle.monthly]) {
+      final pool = periodState.type == QuestPeriodType.weekly ? weeklyQuestPool : monthlyQuestPool;
+      final periodStart = QuestService.periodStartFor(periodState.type);
+      final periodEntries = QuestService.entriesInPeriod(updatedHistory, periodStart);
+
+      for (final activeQuest in periodState.quests) {
+        if (activeQuest.completed) continue;
+        final matches = pool.where((t) => t.id == activeQuest.templateId);
+        if (matches.isEmpty) continue;
+        final template = matches.first;
+        final progress = QuestService.progressFor(template, periodEntries);
+
+        if (progress >= template.target) {
+          xpGained += template.xpReward;
+          newlyCompletedQuests.add(CompletedQuest(template: template));
+          await _questService.markCompleted(uid, periodState.type, template.id);
+        }
+      }
+    }
+
+    // --- Totals ---
     final newTotalXp = currentXp + xpGained;
     final previousLevel = LevelConfig.levelForXp(currentXp);
     final newLevel = LevelConfig.levelForXp(newTotalXp);
@@ -109,7 +147,8 @@ class ProgressionService {
       newLevel: newLevel,
       leveledUp: newLevel > previousLevel,
       totalAchievementsUnlocked: totalAchievementsUnlocked,
-      newlyUnlockedAchievements: newlyUnlocked,
+      newlyUnlockedAchievements: newlyUnlockedAchievements,
+      newlyCompletedQuests: newlyCompletedQuests,
     );
   }
 }

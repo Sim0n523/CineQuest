@@ -73,6 +73,27 @@ class RewardDialog extends StatelessWidget {
                 ),
               ),
             ],
+            if (result.newlyCompletedQuests.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(color: AppColors.card),
+              const SizedBox(height: 12),
+              Text('Quests Completed', style: AppTextStyles.body),
+              const SizedBox(height: 8),
+              ...result.newlyCompletedQuests.map(
+                (q) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.flag_rounded, color: AppColors.success, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(q.template.title, style: AppTextStyles.bodySecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             PrimaryButton(label: 'Nice!', onPressed: () => Navigator.of(context).pop()),
           ],
