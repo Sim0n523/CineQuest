@@ -1,10 +1,10 @@
 name: cinequest
 description: "A gamified movie-tracking app — level up your cinema life."
 publish_to: 'none'
-version: 0.4.0+1
+version: 0.7.5+6
 
 environment:
-  sdk: '>=3.6.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -26,6 +26,25 @@ dependencies:
   google_fonts: ^8.0.2
   cached_network_image: ^3.4.1
   intl: ^0.19.0
+
+  # Location (OpenStreetMap-based — no API key or billing account needed,
+  # unlike Google Maps. See README for why.)
+  flutter_map: ^8.3.0
+  latlong2: ^0.9.1
+  geolocator: ^14.0.3
+
+  # Camera (Movie Memories — attach a photo when logging a movie)
+  camera: ^0.12.0+1
+  path_provider: ^2.1.5
+  # Gallery upload alternative to the camera capture flow. Exact-pinned,
+  # not caret — the current latest image_picker needs Dart 3.12+, and an
+  # intermediate version needs Dart 3.10+; both exceed this project's
+  # Dart 3.9.2 floor. 1.2.1 is confirmed (via its own pubspec.yaml) to
+  # need only Dart >=3.7.0, so it's used here exactly, not ^1.2.1 — a
+  # caret range could still resolve to one of those newer, incompatible
+  # versions since they're all 1.x. Same class of issue that already
+  # broke pub get once with the camera package — see toolchain notes.
+  image_picker: 1.2.1
 
 dev_dependencies:
   flutter_test:

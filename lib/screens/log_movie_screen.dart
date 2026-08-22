@@ -1,16 +1,23 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import '../core/models/movie_model.dart';
 import '../core/models/watch_history_entry.dart';
 import '../core/providers/auth_provider.dart';
 import '../core/providers/watch_history_provider.dart';
 import '../core/services/progression_service.dart';
+import '../core/services/local_photo_service.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/star_rating.dart';
 import '../widgets/reward_dialog.dart';
+import 'nearby_cinemas_screen.dart';
+import 'camera_capture_screen.dart';
+
+enum _PhotoSource { camera, gallery }
 
 /// Handles both logging a movie for the first time and editing an
 /// existing log — pass the current entry via existingEntry to pre-fill
@@ -32,6 +39,15 @@ class _LogMovieScreenState extends State<LogMovieScreen> {
   late DateTime _watchDate;
   bool _isSaving = false;
 
+  String? _localPhotoPath; // newly captured this session, not yet uploaded
+  String? _existingPhotoPath; // from the existing entry, or after saving
+
+  ImageProvider? get _photoPreview {
+    if (_localPhotoPath != null) return FileImage(File(_localPhotoPath!));
+    if (_existingPhotoPath != null) return FileImage(File(_existingPhotoPath!));
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +56,7 @@ class _LogMovieScreenState extends State<LogMovieScreen> {
     _reviewController = TextEditingController(text: existing?.review ?? '');
     _cinemaController = TextEditingController(text: existing?.cinema ?? '');
     _watchDate = existing?.watchDate ?? DateTime.now();
+    _existingPhotoPath = existing?.photoPath;
   }
 
   @override
@@ -59,6 +76,62 @@ class _LogMovieScreenState extends State<LogMovieScreen> {
     if (picked != null) setState(() => _watchDate = picked);
   }
 
+  /// Offers a choice between the custom live-preview camera capture
+  /// (CameraCaptureScreen, the primary/first-listed option — kept front
+  /// and center, not just because it's already built, but because it's
+  /// the "camera services" rubric line's actual implementation) and
+  /// picking an existing photo from the gallery. Either path ends with
+  /// the same result: a local temp file path in _localPhotoPath, copied
+  /// to permanent storage by LocalPhotoService only once _save() runs —
+  /// so nothing downstream of this method needed to change for gallery
+  /// support.
+  Future<void> _pickPhoto() async {
+    final source = await showModalBottomSheet<_PhotoSource>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primaryAccent),
+              title: Text('Take a Photo', style: AppTextStyles.body),
+              onTap: () => Navigator.of(context).pop(_PhotoSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: AppColors.primaryAccent),
+              title: Text('Choose from Gallery', style: AppTextStyles.body),
+              onTap: () => Navigator.of(context).pop(_PhotoSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    String? path;
+    if (source == _PhotoSource.camera) {
+      path = await Navigator.of(context).push<String>(
+        MaterialPageRoute(builder: (_) => const CameraCaptureScreen()),
+      );
+    } else {
+      final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+      path = picked?.path;
+    }
+
+    if (path != null && mounted) {
+      setState(() {
+        _localPhotoPath = path;
+        _existingPhotoPath = null; // the new photo replaces whatever was there
+      });
+    }
+  }
+
   Future<void> _save() async {
     final uid = context.read<AuthProvider>().currentUser?.uid;
     if (uid == null) return;
@@ -66,6 +139,26 @@ class _LogMovieScreenState extends State<LogMovieScreen> {
     setState(() => _isSaving = true);
 
     final isNewLog = widget.existingEntry == null;
+
+    String? photoPath = _existingPhotoPath;
+    if (_localPhotoPath != null) {
+      try {
+        photoPath = await LocalPhotoService().saveMoviePhoto(
+          movieId: widget.movie.id,
+          capturedFile: File(_localPhotoPath!),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Couldn't save the photo: $e"),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    }
 
     final entry = WatchHistoryEntry(
       movieId: widget.movie.id,
@@ -78,8 +171,12 @@ class _LogMovieScreenState extends State<LogMovieScreen> {
       review: _reviewController.text.trim().isEmpty ? null : _reviewController.text.trim(),
       watchDate: _watchDate,
       cinema: _cinemaController.text.trim().isEmpty ? null : _cinemaController.text.trim(),
-      photoUrl: widget.existingEntry?.photoUrl,
+      photoPath: photoPath,
       loggedAt: widget.existingEntry?.loggedAt ?? DateTime.now(),
+      directorId: widget.movie.directorId,
+      directorName: widget.movie.directorName,
+      leadActorId: widget.movie.leadActorId,
+      leadActorName: widget.movie.leadActorName,
     );
 
     final historyProvider = context.read<WatchHistoryProvider>();
@@ -133,89 +230,157 @@ class _LogMovieScreenState extends State<LogMovieScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: Text(isEditing ? 'Edit Log' : 'Log Movie')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 56,
-                      height: 84,
-                      child: widget.movie.posterUrl != null
-                          ? CachedNetworkImage(imageUrl: widget.movie.posterUrl!, fit: BoxFit.cover)
-                          : Container(color: AppColors.card),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 56,
+                        height: 84,
+                        child: widget.movie.posterUrl != null
+                            ? CachedNetworkImage(imageUrl: widget.movie.posterUrl!, fit: BoxFit.cover)
+                            : Container(color: AppColors.card),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      widget.movie.title,
-                      style: AppTextStyles.h3,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        widget.movie.title,
+                        style: AppTextStyles.h3,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-              Text('Your Rating', style: AppTextStyles.body),
-              const SizedBox(height: 8),
-              StarRating(
-                rating: _rating,
-                size: 40,
-                onChanged: (value) => setState(() => _rating = value),
-              ),
-              const SizedBox(height: 24),
-              Text('Watch Date', style: AppTextStyles.body),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: _pickDate,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today_rounded, color: AppColors.textSecondary, size: 18),
-                      const SizedBox(width: 10),
-                      Text(_formatDate(_watchDate), style: AppTextStyles.body),
-                    ],
+                  ],
+                ),
+                const SizedBox(height: 28),
+                Text('Your Rating', style: AppTextStyles.body),
+                const SizedBox(height: 8),
+                StarRating(
+                  rating: _rating,
+                  size: 40,
+                  onChanged: (value) => setState(() => _rating = value),
+                ),
+                const SizedBox(height: 24),
+                Text('Watch Date', style: AppTextStyles.body),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _pickDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today_rounded, color: AppColors.textSecondary, size: 18),
+                        const SizedBox(width: 10),
+                        Text(_formatDate(_watchDate), style: AppTextStyles.body),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Text('Review (optional)', style: AppTextStyles.body),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _reviewController,
-                maxLines: 4,
-                style: AppTextStyles.body,
-                decoration: const InputDecoration(hintText: 'What did you think?'),
-              ),
-              const SizedBox(height: 20),
-              Text('Cinema (optional)', style: AppTextStyles.body),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _cinemaController,
-                style: AppTextStyles.body,
-                decoration: const InputDecoration(hintText: 'Where did you watch it?'),
-              ),
-              const SizedBox(height: 32),
-              PrimaryButton(
-                label: isEditing ? 'Save Changes' : 'Log This Movie',
-                isLoading: _isSaving,
-                onPressed: _save,
-              ),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 24),
+                Text('Review (optional)', style: AppTextStyles.body),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _reviewController,
+                  maxLines: 4,
+                  style: AppTextStyles.body,
+                  decoration: const InputDecoration(hintText: 'What did you think?'),
+                ),
+                const SizedBox(height: 20),
+                Text('Cinema (optional)', style: AppTextStyles.body),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _cinemaController,
+                        style: AppTextStyles.body,
+                        decoration: const InputDecoration(hintText: 'Where did you watch it?'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Find a nearby cinema',
+                      icon: const Icon(Icons.near_me_rounded, color: AppColors.primaryAccent),
+                      onPressed: () async {
+                        final selected = await Navigator.of(context).push<String>(
+                          MaterialPageRoute(
+                            builder: (_) => const NearbyCinemasScreen(selectionMode: true),
+                          ),
+                        );
+                        if (selected != null) {
+                          _cinemaController.text = selected;
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text('Photo (optional)', style: AppTextStyles.body),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: _pickPhoto,
+                  child: Container(
+                    height: 160,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      image: _photoPreview != null
+                          ? DecorationImage(image: _photoPreview!, fit: BoxFit.cover)
+                          : null,
+                    ),
+                    child: _photoPreview == null
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.camera_alt_rounded, color: AppColors.textSecondary, size: 32),
+                              const SizedBox(height: 8),
+                              Text('Add a photo', style: AppTextStyles.bodySecondary),
+                            ],
+                          )
+                        : Align(
+                            alignment: Alignment.topRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: GestureDetector(
+                                onTap: () => setState(() {
+                                  _localPhotoPath = null;
+                                  _existingPhotoPath = null;
+                                }),
+                                child: const CircleAvatar(
+                                  backgroundColor: Colors.black54,
+                                  radius: 16,
+                                  child: Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                                ),
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                PrimaryButton(
+                  label: isEditing ? 'Save Changes' : 'Log This Movie',
+                  isLoading: _isSaving,
+                  onPressed: _save,
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

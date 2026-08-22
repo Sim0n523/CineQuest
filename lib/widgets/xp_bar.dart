@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 import '../utils/xp_config.dart';
+import 'animated_progress_bar.dart';
 
 class XPBar extends StatelessWidget {
   final int xp;
@@ -21,21 +22,14 @@ class XPBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Level $level', style: AppTextStyles.body),
-            Text(
-              nextThreshold != null ? '$xp / $nextThreshold XP' : '$xp XP · Max Level',
-              style: AppTextStyles.caption,
-            ),
+            Text('$xp / $nextThreshold XP', style: AppTextStyles.caption),
           ],
         ),
         const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 10,
-            backgroundColor: AppColors.card,
-            valueColor: const AlwaysStoppedAnimation(AppColors.xp),
-          ),
+        AnimatedProgressBar(
+          value: progress,
+          minHeight: 10,
+          valueColor: AppColors.xp,
         ),
       ],
     );

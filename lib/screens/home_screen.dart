@@ -8,7 +8,8 @@ import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/section_header.dart';
-import '../widgets/loading_indicator.dart';
+import '../widgets/skeleton_loaders.dart';
+import '../widgets/fade_slide_in.dart';
 import 'movie_details_screen.dart';
 import 'search_screen.dart';
 
@@ -81,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMovieRow(List<MovieModel> movies, LoadStatus status) {
     if (status == LoadStatus.loading) {
       return const SliverToBoxAdapter(
-        child: SizedBox(height: 240, child: LoadingIndicator()),
+        child: SizedBox(height: 240, child: MovieRowSkeleton()),
       );
     }
     if (status == LoadStatus.error) {
@@ -104,11 +105,14 @@ class _HomeScreenState extends State<HomeScreen> {
           separatorBuilder: (_, __) => const SizedBox(width: 12),
           itemBuilder: (context, index) {
             final movie = movies[index];
-            return MovieCard(
-              movie: movie,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => MovieDetailsScreen(movieId: movie.id),
+            return FadeSlideIn(
+              index: index,
+              child: MovieCard(
+                movie: movie,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => MovieDetailsScreen(movieId: movie.id, seed: movie),
+                  ),
                 ),
               ),
             );

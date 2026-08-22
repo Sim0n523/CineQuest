@@ -24,6 +24,21 @@ class LeaderboardService {
     ];
   }
 
+  /// Live version of [fetchTopUsers] — emits a fresh ranking whenever any
+  /// user's `xp` changes, instead of requiring the screen to be reopened
+  /// to see the update.
+  Stream<List<LeaderboardEntry>> watchTopUsers({int limit = 50}) {
+    return _firestore
+        .collection('users')
+        .orderBy('xp', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => [
+              for (var i = 0; i < snapshot.docs.length; i++)
+                LeaderboardEntry.fromMap(snapshot.docs[i].id, snapshot.docs[i].data(), rank: i + 1),
+            ]);
+  }
+
   /// Exact rank via a count aggregation, so a user outside the visible
   /// top N doesn't require fetching the entire user base just to find
   /// out where they stand.

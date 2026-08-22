@@ -17,8 +17,18 @@ class WatchHistoryEntry {
   final String? review;
   final DateTime watchDate;
   final String? cinema;
-  final String? photoUrl; // reserved for Phase 5 (Camera / Movie Memories)
+  final String? photoPath; // local file path (Camera / Movie Memories)
   final DateTime loggedAt;
+
+  // Snapshotted from MovieModel at log time (see TMDBService.getMovieDetails'
+  // append_to_response=credits) — powers the Behind the Camera / Star
+  // Power achievements. Entries logged before this was added simply
+  // have these as null, same graceful-degradation pattern as photoPath
+  // before Camera existed.
+  final int? directorId;
+  final String? directorName;
+  final int? leadActorId;
+  final String? leadActorName;
 
   const WatchHistoryEntry({
     required this.movieId,
@@ -31,8 +41,12 @@ class WatchHistoryEntry {
     this.review,
     required this.watchDate,
     this.cinema,
-    this.photoUrl,
+    this.photoPath,
     required this.loggedAt,
+    this.directorId,
+    this.directorName,
+    this.leadActorId,
+    this.leadActorName,
   });
 
   String? get posterUrl =>
@@ -53,8 +67,12 @@ class WatchHistoryEntry {
       review: map['review'] as String?,
       watchDate: DateTime.tryParse(map['watchDate'] as String? ?? '') ?? DateTime.now(),
       cinema: map['cinema'] as String?,
-      photoUrl: map['photoUrl'] as String?,
+      photoPath: map['photoPath'] as String?,
       loggedAt: DateTime.tryParse(map['loggedAt'] as String? ?? '') ?? DateTime.now(),
+      directorId: map['directorId'] as int?,
+      directorName: map['directorName'] as String?,
+      leadActorId: map['leadActorId'] as int?,
+      leadActorName: map['leadActorName'] as String?,
     );
   }
 
@@ -70,8 +88,12 @@ class WatchHistoryEntry {
       'review': review,
       'watchDate': watchDate.toIso8601String(),
       'cinema': cinema,
-      'photoUrl': photoUrl,
+      'photoPath': photoPath,
       'loggedAt': loggedAt.toIso8601String(),
+      'directorId': directorId,
+      'directorName': directorName,
+      'leadActorId': leadActorId,
+      'leadActorName': leadActorName,
     };
   }
 }

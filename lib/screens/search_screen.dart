@@ -6,7 +6,8 @@ import '../core/providers/load_status.dart';
 import '../core/models/movie_model.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
-import '../widgets/loading_indicator.dart';
+import '../widgets/skeleton_loaders.dart';
+import '../widgets/fade_slide_in.dart';
 import 'movie_details_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -56,7 +57,7 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
     if (movies.searchStatus == LoadStatus.loading) {
-      return const LoadingIndicator();
+      return const MovieTileListSkeleton();
     }
     if (movies.searchStatus == LoadStatus.error) {
       return Center(
@@ -73,24 +74,30 @@ class _SearchScreenState extends State<SearchScreen> {
       itemCount: movies.searchResults.length,
       itemBuilder: (context, index) {
         final MovieModel movie = movies.searchResults[index];
-        return ListTile(
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              width: 46,
-              height: 69,
-              child: movie.posterUrl != null
-                  ? CachedNetworkImage(imageUrl: movie.posterUrl!, fit: BoxFit.cover)
-                  : Container(color: AppColors.card),
+        return FadeSlideIn(
+          index: index,
+          child: ListTile(
+            leading: Hero(
+              tag: 'movie_hero_${movie.id}',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  width: 46,
+                  height: 69,
+                  child: movie.posterUrl != null
+                      ? CachedNetworkImage(imageUrl: movie.posterUrl!, fit: BoxFit.cover)
+                      : Container(color: AppColors.card),
+                ),
+              ),
             ),
-          ),
-          title: Text(movie.title, style: AppTextStyles.body),
-          subtitle: Text(
-            movie.releaseDate != null ? '${movie.releaseDate!.year}' : 'Unknown year',
-            style: AppTextStyles.caption,
-          ),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => MovieDetailsScreen(movieId: movie.id)),
+            title: Text(movie.title, style: AppTextStyles.body),
+            subtitle: Text(
+              movie.releaseDate != null ? '${movie.releaseDate!.year}' : 'Unknown year',
+              style: AppTextStyles.caption,
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => MovieDetailsScreen(movieId: movie.id, seed: movie)),
+            ),
           ),
         );
       },

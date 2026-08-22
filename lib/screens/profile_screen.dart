@@ -8,7 +8,10 @@ import '../themes/app_text_styles.dart';
 import '../widgets/stat_tile.dart';
 import '../widgets/xp_bar.dart';
 import '../widgets/level_badge.dart';
+import '../widgets/fade_slide_in.dart';
 import 'achievements_screen.dart';
+import 'collections_screen.dart';
+import 'nearby_cinemas_screen.dart';
 import 'watch_history_screen.dart';
 import 'watchlist_screen.dart';
 
@@ -85,15 +88,18 @@ class ProfileScreen extends StatelessWidget {
                   crossAxisSpacing: 12,
                   childAspectRatio: 1.6,
                   children: [
-                    StatTile(label: 'Movies Watched', value: '${stats.moviesWatched}'),
-                    StatTile(label: 'Reviews Written', value: '${stats.reviewsWritten}'),
-                    StatTile(
-                      label: 'Average Rating',
-                      value: stats.averageRating == 0 ? '—' : stats.averageRating.toStringAsFixed(1),
+                    FadeSlideIn(index: 0, child: StatTile(label: 'Movies Watched', value: '${stats.moviesWatched}')),
+                    FadeSlideIn(index: 1, child: StatTile(label: 'Reviews Written', value: '${stats.reviewsWritten}')),
+                    FadeSlideIn(
+                      index: 2,
+                      child: StatTile(
+                        label: 'Average Rating',
+                        value: stats.averageRating == 0 ? '—' : stats.averageRating.toStringAsFixed(1),
+                      ),
                     ),
-                    StatTile(label: 'Hours Watched', value: '${stats.hoursWatched}'),
-                    StatTile(label: 'Favorite Genre', value: stats.favoriteGenre ?? '—'),
-                    StatTile(label: 'Achievements', value: '${user.achievementsUnlocked}'),
+                    FadeSlideIn(index: 3, child: StatTile(label: 'Hours Watched', value: '${stats.hoursWatched}')),
+                    FadeSlideIn(index: 4, child: StatTile(label: 'Favorite Genre', value: stats.favoriteGenre ?? '—')),
+                    FadeSlideIn(index: 5, child: StatTile(label: 'Achievements', value: '${user.achievementsUnlocked}')),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -103,27 +109,58 @@ class ProfileScreen extends StatelessWidget {
                   style: AppTextStyles.caption,
                 ),
                 const SizedBox(height: 28),
-                _ProfileLink(
-                  icon: Icons.emoji_events_rounded,
-                  label: 'Achievements',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                FadeSlideIn(
+                  index: 6,
+                  child: _ProfileLink(
+                    icon: Icons.emoji_events_rounded,
+                    label: 'Achievements',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                _ProfileLink(
-                  icon: Icons.history_rounded,
-                  label: 'Watch History',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const WatchHistoryScreen()),
+                FadeSlideIn(
+                  index: 7,
+                  child: _ProfileLink(
+                    icon: Icons.collections_bookmark_rounded,
+                    label: 'Collections',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const CollectionsScreen()),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                _ProfileLink(
-                  icon: Icons.bookmark_border_rounded,
-                  label: 'Watchlist',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const WatchlistScreen()),
+                FadeSlideIn(
+                  index: 8,
+                  child: _ProfileLink(
+                    icon: Icons.theaters_rounded,
+                    label: 'Nearby Cinemas',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const NearbyCinemasScreen()),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FadeSlideIn(
+                  index: 9,
+                  child: _ProfileLink(
+                    icon: Icons.history_rounded,
+                    label: 'Watch History',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const WatchHistoryScreen()),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FadeSlideIn(
+                  index: 10,
+                  child: _ProfileLink(
+                    icon: Icons.bookmark_border_rounded,
+                    label: 'Watchlist',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const WatchlistScreen()),
+                    ),
                   ),
                 ),
               ],

@@ -3,6 +3,35 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_text_styles.dart';
 
+/// A gentle fade + upward-drift transition used for every push/pop in
+/// the app (wired in via ThemeData.pageTransitionsTheme below) — swaps
+/// out both platforms' stock transitions for something that matches
+/// CineQuest's dark, cinematic feel rather than the default Android
+/// zoom / iOS slide-from-right. Only the incoming page animates; the
+/// outgoing page holds still, which keeps this cheap and avoids fighting
+/// with Hero flights running at the same time.
+class _CinematicPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _CinematicPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(curved),
+        child: child,
+      ),
+    );
+  }
+}
+
 class AppTheme {
   AppTheme._();
 
@@ -12,6 +41,12 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primaryAccent,
       fontFamily: GoogleFonts.inter().fontFamily,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _CinematicPageTransitionsBuilder(),
+          TargetPlatform.iOS: _CinematicPageTransitionsBuilder(),
+        },
+      ),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryAccent,
         secondary: AppColors.xp,

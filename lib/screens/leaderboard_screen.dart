@@ -9,6 +9,8 @@ import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/level_badge.dart';
+import '../widgets/skeleton_loaders.dart';
+import '../widgets/fade_slide_in.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -24,7 +26,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().currentUser;
       if (user != null) {
-        context.read<LeaderboardProvider>().load(currentUid: user.uid, currentXp: user.xp);
+        context.read<LeaderboardProvider>().listen(currentUid: user.uid, currentXp: user.xp);
       }
     });
   }
@@ -43,7 +45,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   Widget _buildBody(LeaderboardProvider leaderboard, String? currentUid) {
     if (leaderboard.status == LoadStatus.loading && leaderboard.topUsers.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryAccent));
+      return const LeaderboardListSkeleton();
     }
     if (leaderboard.status == LoadStatus.error && leaderboard.topUsers.isEmpty) {
       return Center(child: Text("Couldn't load the leaderboard", style: AppTextStyles.bodySecondary));
@@ -64,7 +66,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             itemCount: leaderboard.topUsers.length,
             itemBuilder: (context, index) {
               final entry = leaderboard.topUsers[index];
-              return _LeaderboardTile(entry: entry, isCurrentUser: entry.uid == currentUid);
+              return FadeSlideIn(
+                index: index,
+                child: _LeaderboardTile(entry: entry, isCurrentUser: entry.uid == currentUid),
+              );
             },
           ),
         ),

@@ -6,10 +6,19 @@ import '../../utils/achievement_config.dart';
 /// watch history. This means the Achievements screen can compute
 /// current tiers live without an extra fetch; ProgressionService uses
 /// the same functions when deciding what just got unlocked.
+///
+/// collectionsCompleted is the one exception to "purely from history" —
+/// it's a count that lives on UserModel, not WatchHistoryEntry, so it's
+/// passed in rather than derived. Defaults to 0 so existing call sites
+/// that don't care about that category don't need updating.
 class AchievementService {
   AchievementService._();
 
-  static int currentValueFor(AchievementCategory category, List<WatchHistoryEntry> history) {
+  static int currentValueFor(
+    AchievementCategory category,
+    List<WatchHistoryEntry> history, {
+    int collectionsCompleted = 0,
+  }) {
     switch (category) {
       case AchievementCategory.moviesWatched:
         return history.length;
@@ -28,11 +37,20 @@ class AchievementService {
             .map((e) => e.releaseYear! ~/ 10)
             .toSet()
             .length;
+      case AchievementCategory.fiveStarRatings:
+        return history.where((e) => (e.rating ?? 0) >= 5).length;
+      case AchievementCategory.directorsExplored:
+        return history.where((e) => e.directorId != null).map((e) => e.directorId).toSet().length;
+      case AchievementCategory.actorsExplored:
+        return history.where((e) => e.leadActorId != null).map((e) => e.leadActorId).toSet().length;
+      case AchievementCategory.collectionsCompleted:
+        return collectionsCompleted;
     }
   }
 
-  /// 0 = no tier unlocked yet. Same threshold-scanning pattern as
-  /// LevelConfig.levelForXp, for consistency across the codebase.
+  /// 0 = no tier unlocked yet. Same threshold-scanning pattern
+  /// LevelConfig.levelForXp used to use (before it switched to a
+  /// formula) — tiers are still a small fixed array, so this stays.
   static int tierForValue(AchievementDefinition definition, int value) {
     int tier = 0;
     for (int i = 0; i < definition.tierThresholds.length; i++) {

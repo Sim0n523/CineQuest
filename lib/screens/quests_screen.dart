@@ -10,6 +10,8 @@ import '../core/services/quest_service.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 import '../utils/quest_config.dart';
+import '../widgets/fade_slide_in.dart';
+import '../widgets/animated_progress_bar.dart';
 
 class QuestsScreen extends StatefulWidget {
   const QuestsScreen({super.key});
@@ -76,12 +78,16 @@ class _QuestsScreenState extends State<QuestsScreen> {
     final periodStart = QuestService.periodStartFor(periodState.type);
     final periodEntries = QuestService.entriesInPeriod(history, periodStart);
 
-    return periodState.quests.map((activeQuest) {
+    return periodState.quests.asMap().entries.map((mapEntry) {
+      final activeQuest = mapEntry.value;
       final matches = pool.where((t) => t.id == activeQuest.templateId);
       if (matches.isEmpty) return const SizedBox.shrink();
       final template = matches.first;
       final progress = QuestService.progressFor(template, periodEntries);
-      return _QuestCard(template: template, progress: progress, completed: activeQuest.completed);
+      return FadeSlideIn(
+        index: mapEntry.key,
+        child: _QuestCard(template: template, progress: progress, completed: activeQuest.completed),
+      );
     }).toList();
   }
 }
@@ -130,14 +136,10 @@ class _QuestCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: clampedProgress,
-              minHeight: 8,
-              backgroundColor: AppColors.surface,
-              valueColor: AlwaysStoppedAnimation(completed ? AppColors.success : AppColors.primaryAccent),
-            ),
+          AnimatedProgressBar(
+            value: clampedProgress,
+            minHeight: 8,
+            valueColor: completed ? AppColors.success : AppColors.primaryAccent,
           ),
           const SizedBox(height: 4),
           Text('${progress.clamp(0, template.target)} / ${template.target}', style: AppTextStyles.caption),

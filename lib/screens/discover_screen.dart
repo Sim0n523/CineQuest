@@ -7,7 +7,8 @@ import '../themes/app_text_styles.dart';
 import '../utils/discover_sort.dart';
 import '../utils/genre_map.dart';
 import '../widgets/movie_card.dart';
-import '../widgets/loading_indicator.dart';
+import '../widgets/skeleton_loaders.dart';
+import '../widgets/fade_slide_in.dart';
 import 'movie_details_screen.dart';
 
 /// Genuinely browsable, unlike Home's preview rows: filter by genre and
@@ -117,7 +118,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   Widget _buildGrid(MovieProvider movies) {
     if (movies.discoverStatus == LoadStatus.loading && movies.discoverResults.isEmpty) {
-      return const LoadingIndicator();
+      return const MovieGridSkeleton();
     }
     if (movies.discoverStatus == LoadStatus.error && movies.discoverResults.isEmpty) {
       return Center(child: Text("Couldn't load movies", style: AppTextStyles.bodySecondary));
@@ -136,11 +137,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       itemCount: movies.discoverResults.length,
       itemBuilder: (context, index) {
         final movie = movies.discoverResults[index];
-        return MovieCard(
-          movie: movie,
-          expand: true,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => MovieDetailsScreen(movieId: movie.id)),
+        return FadeSlideIn(
+          index: index,
+          child: MovieCard(
+            movie: movie,
+            expand: true,
+            heroTag: 'movie_hero_${movie.id}',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => MovieDetailsScreen(movieId: movie.id, seed: movie)),
+            ),
           ),
         );
       },

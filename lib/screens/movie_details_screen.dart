@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/models/movie_model.dart';
 import '../core/providers/movie_provider.dart';
@@ -11,23 +12,47 @@ import '../widgets/loading_indicator.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/star_rating.dart';
 import 'log_movie_screen.dart';
+import 'photo_viewer_screen.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
   final int movieId;
 
-  const MovieDetailsScreen({super.key, required this.movieId});
+  /// A partial MovieModel already known at the call site (e.g. from the
+  /// list/grid item the user tapped). TMDB's list endpoints already
+  /// include title, backdrop, poster, rating, and overview — the only
+  /// things missing are detail-only fields like runtime. When provided,
+  /// the screen renders real content immediately instead of showing a
+  /// loading state while it re-fetches data it already had; the full
+  /// fetch still runs in the background and fills in the rest silently
+  /// once it resolves.
+  ///
+  /// Screens that only know a bare movie id (Watch History, Watchlist —
+  /// their Firestore entries don't store a backdrop path) leave this
+  /// null and fall back to the loading state below.
+  final MovieModel? seed;
+
+  const MovieDetailsScreen({super.key, required this.movieId, this.seed});
 
   @override
   State<MovieDetailsScreen> createState() => _MovieDetailsScreenState();
 }
 
 class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
-  late Future<MovieModel> _future;
+  MovieModel? _movie;
+  bool _fetchFailed = false;
 
   @override
   void initState() {
     super.initState();
-    _future = context.read<MovieProvider>().fetchMovieDetails(widget.movieId);
+    _movie = widget.seed;
+    context.read<MovieProvider>().fetchMovieDetails(widget.movieId).then((full) {
+      if (mounted) setState(() => _movie = full);
+    }).catchError((_) {
+      // If we already have a seed, keep showing it rather than erroring
+      // out a screen that has perfectly usable content on it — the only
+      // loss is detail-only fields like runtime, which just stay hidden.
+      if (mounted && _movie == null) setState(() => _fetchFailed = true);
+    });
   }
 
   Future<void> _toggleWatchlist(MovieModel movie) async {
@@ -43,26 +68,48 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Built from the id alone (not the fetched/seeded movie) so it's
+    // present from the very first frame — including the loading state —
+    // which is what lets the Hero flight from a list thumbnail actually
+    // fire. A Hero that only appears once data has loaded arrives one
+    // frame too late for the push transition to find it.
+    final heroTag = 'movie_hero_${widget.movieId}';
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: FutureBuilder<MovieModel>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const LoadingIndicator();
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(
-              child: Text('Could not load this movie', style: AppTextStyles.bodySecondary),
-            );
-          }
-          return _buildContent(snapshot.data!);
-        },
-      ),
+      body: _movie != null
+          ? _buildContent(_movie!, heroTag)
+          : _fetchFailed
+              ? Center(
+                  child: Text('Could not load this movie', style: AppTextStyles.bodySecondary),
+                )
+              : _buildLoading(heroTag),
     );
   }
 
-  Widget _buildContent(MovieModel movie) {
+  Widget _buildLoading(String heroTag) {
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          backgroundColor: AppColors.background,
+          expandedHeight: 320,
+          pinned: true,
+          flexibleSpace: FlexibleSpaceBar(
+            background: Hero(
+              tag: heroTag,
+              child: Container(color: AppColors.surface),
+            ),
+          ),
+        ),
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: LoadingIndicator(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent(MovieModel movie, String heroTag) {
     final history = context.watch<WatchHistoryProvider>();
     final isLogged = history.isLogged(movie.id);
     final isOnWatchlist = history.isOnWatchlist(movie.id);
@@ -86,23 +133,26 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
               ),
           ],
           flexibleSpace: FlexibleSpaceBar(
-            background: movie.backdropUrl != null
-                ? Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CachedNetworkImage(imageUrl: movie.backdropUrl!, fit: BoxFit.cover),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, AppColors.background],
+            background: Hero(
+              tag: heroTag,
+              child: movie.backdropUrl != null
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedNetworkImage(imageUrl: movie.backdropUrl!, fit: BoxFit.cover),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, AppColors.background],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  )
-                : Container(color: AppColors.surface),
+                      ],
+                    )
+                  : Container(color: AppColors.surface),
+            ),
           ),
         ),
         SliverPadding(
@@ -156,6 +206,31 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       if ((existingEntry.review ?? '').isNotEmpty) ...[
                         const SizedBox(height: 10),
                         Text(existingEntry.review!, style: AppTextStyles.bodySecondary),
+                      ],
+                      if ((existingEntry.photoPath ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => PhotoViewerScreen(photoPath: existingEntry.photoPath!),
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(existingEntry.photoPath!),
+                              height: 160,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                height: 160,
+                                color: AppColors.surface,
+                                alignment: Alignment.center,
+                                child: Text('Photo unavailable', style: AppTextStyles.caption),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   ),

@@ -100,6 +100,21 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() => _authService.signOut();
 
+  /// Applies a collection-completion reward locally, mirroring how
+  /// recordMovieLogged updates currentUser after the Firestore write
+  /// already happened in ProgressionService.checkCollectionCompletion.
+  void applyCollectionReward(CollectionCompletionResult result) {
+    final user = currentUser;
+    if (user == null) return;
+    currentUser = user.copyWith(
+      xp: result.newXp,
+      level: result.newLevel,
+      collectionsCompleted: user.collectionsCompleted + 1,
+      achievementsUnlocked: result.totalAchievementsUnlocked,
+    );
+    notifyListeners();
+  }
+
   /// Only called for a brand-new log, never an edit — see the note on
   /// ProgressionService for why. Returns null (rather than throwing) if
   /// progression fails, since the movie itself is already logged either
@@ -117,6 +132,7 @@ class AuthProvider extends ChangeNotifier {
         updatedHistory: updatedHistory,
         wroteReview: wroteReview,
         currentXp: user.xp,
+        currentCollectionsCompleted: user.collectionsCompleted,
       );
 
       currentUser = user.copyWith(

@@ -19,6 +19,24 @@ class CompletedQuest {
   const CompletedQuest({required this.template});
 }
 
+class CollectionCompletionResult {
+  final int xpGained;
+  final int newXp;
+  final int newLevel;
+  final bool leveledUp;
+  final List<UnlockedAchievement> newlyUnlockedAchievements;
+  final int totalAchievementsUnlocked;
+
+  const CollectionCompletionResult({
+    required this.xpGained,
+    required this.newXp,
+    required this.newLevel,
+    required this.leveledUp,
+    required this.newlyUnlockedAchievements,
+    required this.totalAchievementsUnlocked,
+  });
+}
+
 class ProgressionResult {
   final int xpGained;
   final int newXp;
@@ -39,13 +57,32 @@ class ProgressionResult {
   });
 }
 
+/// Internal result of running the achievement-tier check — shared
+/// between processMovieLogged and checkCollectionCompletion, since the
+/// collectionsCompleted achievement category can only ever change value
+/// in the latter, but both need the same "did any tier just get
+/// crossed" logic and both write to the same persisted tier docs.
+class _AchievementCheckResult {
+  final int xpGained;
+  final List<UnlockedAchievement> newlyUnlocked;
+  final int totalAchievementsUnlocked;
+  const _AchievementCheckResult({
+    required this.xpGained,
+    required this.newlyUnlocked,
+    required this.totalAchievementsUnlocked,
+  });
+}
+
 /// Owns everything that happens when a movie gets logged for the first
 /// time: XP, level recalculation, achievement tier checks, AND quest
 /// completion checks. Nothing else should award XP directly — matches
 /// blueprint section 7: "MovieService should never directly unlock
 /// achievements... everything flows through the ProgressionService."
-/// Quest completion (+250/+500 XP per section 12) flows through here
-/// too, for the same reason.
+/// Quest completion (+250/+1000 XP, reworked from the blueprint's
+/// original +250/+500 — see xp_config.dart) flows through here too, for
+/// the same reason. Collection completion (checkCollectionCompletion)
+/// is a separate entry point but shares the achievement-check logic via
+/// _checkAchievements below.
 ///
 /// Only called on a brand-new log, never an edit — see the note on
 /// this class from Phase 3 for why (repeated edits shouldn't farm XP).
@@ -62,16 +99,16 @@ class ProgressionService {
   /// of whether a movie was just logged.
   Future<QuestBundle> ensureCurrentQuests(String uid) => _questService.ensureCurrentQuests(uid);
 
-  Future<ProgressionResult> processMovieLogged({
+  /// Checks every achievement category against its current value,
+  /// persists any newly-crossed tier, and returns the XP/unlock summary.
+  /// collectionsCompleted is passed in rather than read from Firestore
+  /// here — callers already have it as a snapshot value (currentUser or
+  /// a param), same pattern as currentXp elsewhere in this class.
+  Future<_AchievementCheckResult> _checkAchievements({
     required String uid,
-    required List<WatchHistoryEntry> updatedHistory,
-    required bool wroteReview,
-    required int currentXp,
+    required List<WatchHistoryEntry> history,
+    required int collectionsCompleted,
   }) async {
-    int xpGained = AppConstants.xpWatchMovie;
-    if (wroteReview) xpGained += AppConstants.xpReviewMovie;
-
-    // --- Achievements ---
     final achievementsRef = _firestore.collection('users').doc(uid).collection('achievements');
     final achievementSnapshot = await achievementsRef.get();
 
@@ -88,20 +125,49 @@ class ProgressionService {
     }
 
     final updatedTiers = Map<AchievementCategory, int>.from(currentTiers);
-    final newlyUnlockedAchievements = <UnlockedAchievement>[];
+    final newlyUnlocked = <UnlockedAchievement>[];
+    var xpGained = 0;
 
     for (final def in achievementDefinitions) {
-      final currentValue = AchievementService.currentValueFor(def.category, updatedHistory);
+      final currentValue = AchievementService.currentValueFor(
+        def.category,
+        history,
+        collectionsCompleted: collectionsCompleted,
+      );
       final previousTier = currentTiers[def.category] ?? 0;
       final newTier = AchievementService.tierForValue(def, currentValue);
 
       if (newTier > previousTier) {
         updatedTiers[def.category] = newTier;
         xpGained += AppConstants.xpAchievementUnlock * (newTier - previousTier);
-        newlyUnlockedAchievements.add(UnlockedAchievement(definition: def, tier: newTier));
+        newlyUnlocked.add(UnlockedAchievement(definition: def, tier: newTier));
         await achievementsRef.doc(def.category.name).set({'unlockedTier': newTier});
       }
     }
+
+    return _AchievementCheckResult(
+      xpGained: xpGained,
+      newlyUnlocked: newlyUnlocked,
+      totalAchievementsUnlocked: updatedTiers.values.fold<int>(0, (sum, t) => sum + t),
+    );
+  }
+
+  Future<ProgressionResult> processMovieLogged({
+    required String uid,
+    required List<WatchHistoryEntry> updatedHistory,
+    required bool wroteReview,
+    required int currentXp,
+    required int currentCollectionsCompleted,
+  }) async {
+    int xpGained = AppConstants.xpWatchMovie;
+    if (wroteReview) xpGained += AppConstants.xpReviewMovie;
+
+    final achievementResult = await _checkAchievements(
+      uid: uid,
+      history: updatedHistory,
+      collectionsCompleted: currentCollectionsCompleted,
+    );
+    xpGained += achievementResult.xpGained;
 
     // --- Quests ---
     final questBundle = await _questService.ensureCurrentQuests(uid);
@@ -131,14 +197,13 @@ class ProgressionService {
     final newTotalXp = currentXp + xpGained;
     final previousLevel = LevelConfig.levelForXp(currentXp);
     final newLevel = LevelConfig.levelForXp(newTotalXp);
-    final totalAchievementsUnlocked = updatedTiers.values.fold<int>(0, (sum, t) => sum + t);
 
     await _firestore.collection('users').doc(uid).update({
       'xp': newTotalXp,
       'level': newLevel,
       'moviesWatched': updatedHistory.length,
       'reviewsWritten': updatedHistory.where((e) => (e.review ?? '').trim().isNotEmpty).length,
-      'achievementsUnlocked': totalAchievementsUnlocked,
+      'achievementsUnlocked': achievementResult.totalAchievementsUnlocked,
     });
 
     return ProgressionResult(
@@ -146,9 +211,72 @@ class ProgressionService {
       newXp: newTotalXp,
       newLevel: newLevel,
       leveledUp: newLevel > previousLevel,
-      totalAchievementsUnlocked: totalAchievementsUnlocked,
-      newlyUnlockedAchievements: newlyUnlockedAchievements,
+      totalAchievementsUnlocked: achievementResult.totalAchievementsUnlocked,
+      newlyUnlockedAchievements: achievementResult.newlyUnlocked,
       newlyCompletedQuests: newlyCompletedQuests,
+    );
+  }
+
+  /// Called from the Collections screen when it detects a collection is
+  /// fully logged — not from processMovieLogged, since checking every
+  /// collection's full movie list against history on every single log
+  /// would mean 5+ extra TMDB round trips per log action. Guarded by a
+  /// persisted `completed` flag so XP is only ever awarded once per
+  /// collection, no matter how many times this gets called.
+  ///
+  /// Also runs the achievement check (history + the just-incremented
+  /// collectionsCompleted) — this is the ONLY place the Collector
+  /// achievement's value can change, since collectionsCompleted never
+  /// moves during a plain movie log.
+  Future<CollectionCompletionResult?> checkCollectionCompletion({
+    required String uid,
+    required String collectionId,
+    required int currentXp,
+    required int movieCount,
+    required int currentCollectionsCompleted,
+    required List<WatchHistoryEntry> history,
+  }) async {
+    final ref = _firestore.collection('users').doc(uid).collection('collections').doc(collectionId);
+    final doc = await ref.get();
+    final alreadyCompleted = doc.exists && (doc.data()?['completed'] as bool? ?? false);
+    if (alreadyCompleted) return null;
+
+    await ref.set({'completed': true});
+
+    // Scales with the collection's actual size so a 3-film collection
+    // (Lord of the Rings) doesn't pay out the same as a 30-film one
+    // (Pixar). Computed live off movieCount rather than a stored value,
+    // so if a collection's resolved movie list is ever corrected (e.g.
+    // a filter fix), the reward automatically reflects the corrected
+    // count with no extra work.
+    var xpGained = AppConstants.xpCollectionBase + AppConstants.xpCollectionPerMovie * movieCount;
+    final newCollectionsCompleted = currentCollectionsCompleted + 1;
+
+    final achievementResult = await _checkAchievements(
+      uid: uid,
+      history: history,
+      collectionsCompleted: newCollectionsCompleted,
+    );
+    xpGained += achievementResult.xpGained;
+
+    final newTotalXp = currentXp + xpGained;
+    final previousLevel = LevelConfig.levelForXp(currentXp);
+    final newLevel = LevelConfig.levelForXp(newTotalXp);
+
+    await _firestore.collection('users').doc(uid).update({
+      'xp': newTotalXp,
+      'level': newLevel,
+      'collectionsCompleted': FieldValue.increment(1),
+      'achievementsUnlocked': achievementResult.totalAchievementsUnlocked,
+    });
+
+    return CollectionCompletionResult(
+      xpGained: xpGained,
+      newXp: newTotalXp,
+      newLevel: newLevel,
+      leveledUp: newLevel > previousLevel,
+      newlyUnlockedAchievements: achievementResult.newlyUnlocked,
+      totalAchievementsUnlocked: achievementResult.totalAchievementsUnlocked,
     );
   }
 }

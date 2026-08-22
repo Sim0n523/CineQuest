@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/providers/auth_provider.dart';
 import '../core/providers/watch_history_provider.dart';
 import '../core/services/achievement_service.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 import '../utils/achievement_config.dart';
+import '../widgets/fade_slide_in.dart';
+import '../widgets/animated_progress_bar.dart';
 
 /// Computes current tier for every category live from watch history
 /// already sitting in WatchHistoryProvider — no separate Firestore read
@@ -17,6 +20,7 @@ class AchievementsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final history = context.watch<WatchHistoryProvider>().watchHistory;
+    final collectionsCompleted = context.watch<AuthProvider>().currentUser?.collectionsCompleted ?? 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -26,9 +30,16 @@ class AchievementsScreen extends StatelessWidget {
         itemCount: achievementDefinitions.length,
         itemBuilder: (context, index) {
           final def = achievementDefinitions[index];
-          final value = AchievementService.currentValueFor(def.category, history);
+          final value = AchievementService.currentValueFor(
+            def.category,
+            history,
+            collectionsCompleted: collectionsCompleted,
+          );
           final tier = AchievementService.tierForValue(def, value);
-          return _AchievementCard(definition: def, currentValue: value, tier: tier);
+          return FadeSlideIn(
+            index: index,
+            child: _AchievementCard(definition: def, currentValue: value, tier: tier),
+          );
         },
       ),
     );
@@ -118,15 +129,7 @@ class _AchievementCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 8,
-                  backgroundColor: AppColors.surface,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.primaryAccent),
-                ),
-              ),
+              AnimatedProgressBar(value: progress, minHeight: 8),
               const SizedBox(height: 6),
               Text(
                 isMaxed ? '$currentValue — maxed out' : '$currentValue / $nextThreshold',

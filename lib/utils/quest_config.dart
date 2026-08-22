@@ -89,8 +89,10 @@ const List<QuestTemplate> weeklyQuestPool = [
   ),
 ];
 
-/// Monthly pool — 3 are randomly selected each month. XP reward (500)
-/// matches blueprint section 12.
+/// Monthly pool — 3 are randomly selected each month. XP reward is 1000
+/// (deliberately 4x a weekly quest's 250 — monthly quests take
+/// meaningfully longer and were previously only worth 2x, which didn't
+/// feel proportionate).
 ///
 /// The blueprint's own monthly examples "Complete Harry Potter
 /// Collection" and "Watch Movies From Five Countries" are NOT here —
@@ -105,7 +107,7 @@ const List<QuestTemplate> monthlyQuestPool = [
     metric: QuestMetric.moviesWatched,
     target: 15,
     period: QuestPeriodType.monthly,
-    xpReward: 500,
+    xpReward: 1000,
   ),
   QuestTemplate(
     id: 'monthly_genres_4',
@@ -114,7 +116,7 @@ const List<QuestTemplate> monthlyQuestPool = [
     metric: QuestMetric.distinctGenres,
     target: 4,
     period: QuestPeriodType.monthly,
-    xpReward: 500,
+    xpReward: 1000,
   ),
   QuestTemplate(
     id: 'monthly_hours_10',
@@ -123,7 +125,7 @@ const List<QuestTemplate> monthlyQuestPool = [
     metric: QuestMetric.hoursWatched,
     target: 10,
     period: QuestPeriodType.monthly,
-    xpReward: 500,
+    xpReward: 1000,
   ),
   QuestTemplate(
     id: 'monthly_reviews_5',
@@ -132,7 +134,7 @@ const List<QuestTemplate> monthlyQuestPool = [
     metric: QuestMetric.reviewsWritten,
     target: 5,
     period: QuestPeriodType.monthly,
-    xpReward: 500,
+    xpReward: 1000,
   ),
 ];
 
