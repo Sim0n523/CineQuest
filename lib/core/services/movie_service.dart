@@ -4,7 +4,7 @@ import '../models/watchlist_entry.dart';
 
 /// Firestore access for the user's own watch history and watchlist —
 /// distinct from TMDBService, which only ever talks to TMDB's external
-/// catalog. Matches blueprint section 7's service list.
+/// catalog.
 class MovieService {
   final FirebaseFirestore _firestore;
 

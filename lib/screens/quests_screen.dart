@@ -8,6 +8,7 @@ import '../core/models/watch_history_entry.dart';
 import '../core/models/quest_period_state.dart';
 import '../core/services/quest_service.dart';
 import '../themes/app_colors.dart';
+import '../themes/app_shadows.dart';
 import '../themes/app_text_styles.dart';
 import '../utils/quest_config.dart';
 import '../widgets/fade_slide_in.dart';
@@ -110,6 +111,7 @@ class _QuestCard extends StatelessWidget {
         color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         border: completed ? Border.all(color: AppColors.success, width: 1) : null,
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,7 +120,7 @@ class _QuestCard extends StatelessWidget {
             children: [
               Icon(
                 completed ? Icons.check_circle_rounded : Icons.flag_rounded,
-                color: completed ? AppColors.success : AppColors.primaryAccent,
+                color: completed ? AppColors.success : AppColors.xp,
                 size: 20,
               ),
               const SizedBox(width: 10),
@@ -139,7 +141,7 @@ class _QuestCard extends StatelessWidget {
           AnimatedProgressBar(
             value: clampedProgress,
             minHeight: 8,
-            valueColor: completed ? AppColors.success : AppColors.primaryAccent,
+            valueColor: completed ? AppColors.success : AppColors.xp,
           ),
           const SizedBox(height: 4),
           Text('${progress.clamp(0, template.target)} / ${template.target}', style: AppTextStyles.caption),

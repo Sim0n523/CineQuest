@@ -71,7 +71,8 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: AppColors.card,
-        elevation: 0,
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -82,6 +83,11 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: AppTextStyles.button,
+          // A soft gold glow instead of the flat elevation:0 every
+          // other surface uses — reinforces the button as THE place
+          // gold means "tap this."
+          elevation: 6,
+          shadowColor: AppColors.primaryAccent,
         ),
       ),
       textButtonTheme: TextButtonThemeData(

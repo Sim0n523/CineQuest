@@ -2,8 +2,7 @@ import '../models/watch_history_entry.dart';
 import '../../utils/genre_map.dart';
 
 /// Computed, derived stats — no Firestore/TMDB access of its own, just
-/// pure calculation over already-fetched watch history. Named to match
-/// blueprint section 7's service list.
+/// pure calculation over already-fetched watch history.
 ///
 /// Deliberately not computed here yet:
 /// - Favorite Director: needs TMDB's /movie/{id}/credits endpoint,

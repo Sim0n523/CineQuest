@@ -4,9 +4,6 @@ import '../themes/app_colors.dart';
 /// A progress bar that smoothly animates to a new [value] instead of
 /// snapping instantly — used anywhere progress represents player
 /// progression (XP, achievement tiers, quest and collection progress).
-/// That covers every LinearProgressIndicator in the app; before this
-/// widget they all used `AlwaysStoppedAnimation`, which — despite the
-/// name — never animated at all.
 ///
 /// Manages its own AnimationController and only re-animates when
 /// [value] genuinely changes, not on every unrelated parent rebuild.

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../core/models/movie_model.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
+import '../themes/app_shadows.dart';
 
 class MovieCard extends StatefulWidget {
   final MovieModel movie;
@@ -66,11 +67,17 @@ class _MovieCardState extends State<MovieCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: AspectRatio(
-            aspectRatio: 2 / 3,
-            child: poster,
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: AppShadows.card,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: AspectRatio(
+              aspectRatio: 2 / 3,
+              child: poster,
+            ),
           ),
         ),
         const SizedBox(height: 6),

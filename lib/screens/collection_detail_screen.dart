@@ -39,7 +39,7 @@ class CollectionDetailScreen extends StatelessWidget {
                 AnimatedProgressBar(
                   value: ratio,
                   minHeight: 8,
-                  valueColor: ratio >= 1.0 ? AppColors.success : AppColors.primaryAccent,
+                  valueColor: ratio >= 1.0 ? AppColors.success : AppColors.xp,
                 ),
                 const SizedBox(height: 6),
                 Text('$loggedCount / $total logged', style: AppTextStyles.caption),

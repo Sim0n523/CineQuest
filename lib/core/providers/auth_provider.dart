@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../models/watch_history_entry.dart';
+import '../models/favorite_movie.dart';
 import '../services/auth_service.dart';
 import '../services/progression_service.dart';
 
@@ -36,6 +37,10 @@ class AuthProvider extends ChangeNotifier {
     final profile = await _authService.fetchUserProfile(firebaseUser.uid);
     if (profile != null) {
       currentUser = profile;
+      // Fire-and-forget — see AuthService.backfillUsernameLower for why
+      // this runs unconditionally on every login rather than only when
+      // the field looks missing.
+      unawaited(_authService.backfillUsernameLower(firebaseUser.uid, profile.username));
     }
     status = AuthStatus.authenticated;
     notifyListeners();
@@ -55,7 +60,13 @@ class AuthProvider extends ChangeNotifier {
     if (success) {
       final uid = _authService.currentUser?.uid;
       if (uid != null) {
-        currentUser = UserModel(uid: uid, username: username, email: email, createdAt: DateTime.now());
+        currentUser = UserModel(
+          uid: uid,
+          username: username,
+          email: email,
+          usernameLower: username.toLowerCase(),
+          createdAt: DateTime.now(),
+        );
         notifyListeners();
       }
     }
@@ -99,6 +110,41 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() => _authService.signOut();
+
+  /// Stores a new avatar — the Base64 string should already be
+  /// compressed (see utils/image_compression.dart) before this is
+  /// called; this method just writes it and updates local state.
+  /// Returns false (rather than throwing) on failure so the caller can
+  /// show a simple "couldn't save" message without a try/catch of its
+  /// own.
+  Future<bool> updateAvatar(String avatarBase64) async {
+    final user = currentUser;
+    if (user == null) return false;
+    try {
+      await _authService.updateAvatar(user.uid, avatarBase64);
+      currentUser = user.copyWith(avatarBase64: avatarBase64);
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Replaces the full favorites list (not a single add/remove) — the
+  /// caller (EditFavoritesScreen) manages the up-to-4 slots locally and
+  /// saves the whole set at once.
+  Future<bool> updateFavoriteMovies(List<FavoriteMovie> favorites) async {
+    final user = currentUser;
+    if (user == null) return false;
+    try {
+      await _authService.updateFavoriteMovies(user.uid, favorites);
+      currentUser = user.copyWith(favoriteMovies: favorites);
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Applies a collection-completion reward locally, mirroring how
   /// recordMovieLogged updates currentUser after the Firestore write

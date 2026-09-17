@@ -135,13 +135,8 @@ class TMDBService {
 
   /// A director's complete filmography via TMDB's person credits
   /// endpoint, filtered to crew entries where job is specifically
-  /// "Director". This replaces an earlier version that used
-  /// /discover/movie's with_crew filter, which matches ANY crew role
-  /// for that person (producer, writer, editor, etc.) — that bug is
-  /// why, for example, a director's collection could include movies
-  /// they only executive-produced. No pagination needed here — unlike
-  /// /discover/movie, movie_credits returns the complete list in one
-  /// call.
+  /// "Director" (not producer/writer/editor). No pagination needed —
+  /// movie_credits returns the complete list in one call.
   Future<List<MovieModel>> getMoviesDirectedByPerson(int personId) async {
     final credits = await _fetchPersonCredits(personId);
     final directed = (credits['crew'] as List? ?? [])

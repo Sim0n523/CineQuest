@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// person was split into director/actor once the director-only bug was
-/// found: /discover/movie's with_crew filter (the old implementation)
-/// matches ANY crew role — producer, writer, editor — not just
-/// directing, and TMDB's discover endpoint has no job-level filter at
-/// all. Both new types instead go through /person/{id}/movie_credits
-/// (see TMDBService.getMoviesDirectedByPerson / getMoviesActedInByPerson),
-/// which returns job- and cast-tagged credits directly.
+/// person sources are split into director/actor since TMDB's discover
+/// endpoint has no job-level filter — both go through
+/// /person/{id}/movie_credits instead (see TMDBService).
 enum CollectionSourceType { tmdbCollection, studio, director, actor }
 
 class CollectionDefinition {
@@ -32,15 +28,10 @@ class CollectionDefinition {
 /// of a wrong/stale ID silently showing the wrong movies.
 ///
 /// Three tracks: TMDB's own collection objects (franchises/trilogies),
-/// studio filmography (Pixar), and person filmography split into
-/// director (crew job = Director) and actor (top-billed cast, capped —
-/// see TMDBService for why). Not here: anything needing data TMDB
-/// doesn't have at all (IMDb rankings, Oscar/Palme d'Or wins) — that
-/// would mean fabricating movie-ID lists rather than resolving real data.
-/// Also not here: cross-franchise "theme" collections like "shark
-/// movies" (Jaws + The Meg + Sharknado) — those don't map to a single
-/// TMDB entity the way everything below does; would need a new
-/// multi-query source type. Flagged, not built.
+/// studio filmography, and person filmography split into director and
+/// actor (see TMDBService). Not supported: anything TMDB has no data
+/// for (e.g. award wins), or cross-franchise "theme" collections that
+/// don't map to a single TMDB entity.
 const List<CollectionDefinition> collectionDefinitions = [
   // --- Franchises / trilogies (TMDB collection objects) ---
   CollectionDefinition(
@@ -168,5 +159,139 @@ const List<CollectionDefinition> collectionDefinitions = [
     sourceType: CollectionSourceType.actor,
     searchQuery: 'Ryan Gosling',
     icon: Icons.face_rounded,
+  ),
+
+  // --- More franchises ---
+  CollectionDefinition(
+    id: 'the_matrix',
+    title: 'The Matrix',
+    description: 'The Wachowskis\' cyberpunk saga',
+    sourceType: CollectionSourceType.tmdbCollection,
+    searchQuery: 'The Matrix Collection',
+    icon: Icons.code_rounded,
+  ),
+  CollectionDefinition(
+    id: 'indiana_jones',
+    title: 'Indiana Jones',
+    description: "Archaeology's least cautious professor",
+    sourceType: CollectionSourceType.tmdbCollection,
+    searchQuery: 'Indiana Jones Collection',
+    icon: Icons.map_rounded,
+  ),
+  CollectionDefinition(
+    id: 'john_wick',
+    title: 'John Wick',
+    description: 'Excommunicado, repeatedly',
+    sourceType: CollectionSourceType.tmdbCollection,
+    searchQuery: 'John Wick Collection',
+    icon: Icons.sports_martial_arts_rounded,
+  ),
+  CollectionDefinition(
+    id: 'mission_impossible',
+    title: 'Mission: Impossible',
+    description: 'Ethan Hunt vs. gravity, repeatedly',
+    sourceType: CollectionSourceType.tmdbCollection,
+    searchQuery: 'Mission: Impossible Collection',
+    icon: Icons.security_rounded,
+  ),
+  CollectionDefinition(
+    id: 'alien',
+    title: 'Alien',
+    description: "In space, no one can hear you complete a collection",
+    sourceType: CollectionSourceType.tmdbCollection,
+    searchQuery: 'Alien Collection',
+    icon: Icons.bug_report_rounded,
+  ),
+  CollectionDefinition(
+    id: 'toy_story',
+    title: 'Toy Story',
+    description: "Pixar's flagship saga",
+    sourceType: CollectionSourceType.tmdbCollection,
+    searchQuery: 'Toy Story Collection',
+    icon: Icons.toys_rounded,
+  ),
+  CollectionDefinition(
+    id: 'back_to_the_future',
+    title: 'Back to the Future',
+    description: '1.21 gigawatts of trilogy',
+    sourceType: CollectionSourceType.tmdbCollection,
+    searchQuery: 'Back to the Future Collection',
+    icon: Icons.history_toggle_off_rounded,
+  ),
+  CollectionDefinition(
+    id: 'terminator',
+    title: 'Terminator',
+    description: "Skynet's ongoing filmography",
+    sourceType: CollectionSourceType.tmdbCollection,
+    searchQuery: 'The Terminator Collection',
+    icon: Icons.smart_toy_rounded,
+  ),
+
+  // --- More directors ---
+  CollectionDefinition(
+    id: 'villeneuve',
+    title: 'Denis Villeneuve',
+    description: 'The complete directing filmography',
+    sourceType: CollectionSourceType.director,
+    searchQuery: 'Denis Villeneuve',
+    icon: Icons.blur_on_rounded,
+  ),
+  CollectionDefinition(
+    id: 'scorsese',
+    title: 'Martin Scorsese',
+    description: 'The complete directing filmography',
+    sourceType: CollectionSourceType.director,
+    searchQuery: 'Martin Scorsese',
+    icon: Icons.local_bar_rounded,
+  ),
+  CollectionDefinition(
+    id: 'gerwig',
+    title: 'Greta Gerwig',
+    description: 'The complete directing filmography',
+    sourceType: CollectionSourceType.director,
+    searchQuery: 'Greta Gerwig',
+    icon: Icons.palette_rounded,
+  ),
+  CollectionDefinition(
+    id: 'wes_anderson',
+    title: 'Wes Anderson',
+    description: 'The complete directing filmography',
+    sourceType: CollectionSourceType.director,
+    searchQuery: 'Wes Anderson',
+    icon: Icons.color_lens_rounded,
+  ),
+
+  // --- More actors ---
+  CollectionDefinition(
+    id: 'tom_hanks',
+    title: 'Tom Hanks',
+    description: 'Top-billed starring roles',
+    sourceType: CollectionSourceType.actor,
+    searchQuery: 'Tom Hanks',
+    icon: Icons.flight_rounded,
+  ),
+  CollectionDefinition(
+    id: 'cillian_murphy',
+    title: 'Cillian Murphy',
+    description: 'Top-billed starring roles',
+    sourceType: CollectionSourceType.actor,
+    searchQuery: 'Cillian Murphy',
+    icon: Icons.remove_red_eye_rounded,
+  ),
+  CollectionDefinition(
+    id: 'zendaya',
+    title: 'Zendaya',
+    description: 'Top-billed starring roles',
+    sourceType: CollectionSourceType.actor,
+    searchQuery: 'Zendaya',
+    icon: Icons.auto_awesome_rounded,
+  ),
+  CollectionDefinition(
+    id: 'meryl_streep',
+    title: 'Meryl Streep',
+    description: 'Top-billed starring roles',
+    sourceType: CollectionSourceType.actor,
+    searchQuery: 'Meryl Streep',
+    icon: Icons.emoji_events_rounded,
   ),
 ];

@@ -8,6 +8,7 @@ import '../themes/app_text_styles.dart';
 import '../utils/achievement_config.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/animated_progress_bar.dart';
+import '../themes/app_shadows.dart';
 
 /// Computes current tier for every category live from watch history
 /// already sitting in WatchHistoryProvider — no separate Firestore read
@@ -86,7 +87,20 @@ class _AchievementCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppShadows.card,
+        // A left accent bar when unlocked gives achievement cards their
+        // own visual signature instead of being an icon-swapped copy of
+        // every other card template in the app.
+        border: Border(
+          left: BorderSide(
+            color: unlocked ? AppColors.xp : Colors.transparent,
+            width: 4,
+          ),
+        ),
+      ),
       child: InkWell(
         onTap: () => _openDetail(context),
         borderRadius: BorderRadius.circular(16),
@@ -100,14 +114,12 @@ class _AchievementCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: unlocked
-                          ? AppColors.primaryAccent.withValues(alpha: 0.15)
-                          : AppColors.surface,
+                      color: unlocked ? AppColors.xp.withValues(alpha: 0.15) : AppColors.surface,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       definition.icon,
-                      color: unlocked ? AppColors.primaryAccent : AppColors.textSecondary,
+                      color: unlocked ? AppColors.xp : AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -123,13 +135,13 @@ class _AchievementCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     isMaxed ? 'MAX' : 'Tier $tier/$maxTier',
-                    style: AppTextStyles.caption.copyWith(color: AppColors.primaryAccent),
+                    style: AppTextStyles.caption.copyWith(color: AppColors.xp, fontWeight: FontWeight.w700),
                   ),
                   const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
                 ],
               ),
               const SizedBox(height: 12),
-              AnimatedProgressBar(value: progress, minHeight: 8),
+              AnimatedProgressBar(value: progress, minHeight: 8, valueColor: AppColors.xp),
               const SizedBox(height: 6),
               Text(
                 isMaxed ? '$currentValue — maxed out' : '$currentValue / $nextThreshold',
@@ -173,13 +185,13 @@ class _AchievementDetailSheet extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: tier > 0
-                        ? AppColors.primaryAccent.withValues(alpha: 0.15)
+                        ? AppColors.xp.withValues(alpha: 0.15)
                         : AppColors.card,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     definition.icon,
-                    color: tier > 0 ? AppColors.primaryAccent : AppColors.textSecondary,
+                    color: tier > 0 ? AppColors.xp : AppColors.textSecondary,
                     size: 26,
                   ),
                 ),
@@ -228,7 +240,7 @@ class _AchievementDetailSheet extends StatelessWidget {
                     ),
                     if (isNext) ...[
                       const SizedBox(width: 8),
-                      Text('· next', style: AppTextStyles.caption.copyWith(color: AppColors.primaryAccent)),
+                      Text('· next', style: AppTextStyles.caption.copyWith(color: AppColors.xp)),
                     ],
                     const Spacer(),
                     Text('$threshold', style: AppTextStyles.bodySecondary),

@@ -11,13 +11,10 @@ class MovieModel {
   final List<int> genreIds;
   final int? runtime;
 
-  // Only populated when fetched via TMDBService.getMovieDetails (which
-  // requests append_to_response=credits) — never present on list/search
-  // results. A movie can have multiple directors (e.g. the Coen
-  // brothers); this deliberately keeps just the first crew entry with
-  // job == "Director" rather than a list, since it's feeding a "how
-  // many different directors have you watched" achievement stat, not
-  // anything that needs full accuracy for co-directed films.
+  // Only populated when fetched via TMDBService.getMovieDetails, never
+  // on list/search results. Keeps just the first "Director" crew entry
+  // rather than a list — fine for a "how many directors have you
+  // watched" stat, not meant to be fully accurate for co-directed films.
   final int? directorId;
   final String? directorName;
   final int? leadActorId;

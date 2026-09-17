@@ -1,7 +1,7 @@
 name: cinequest
 description: "A gamified movie-tracking app — level up your cinema life."
 publish_to: 'none'
-version: 0.7.5+6
+version: 0.8.3+19
 
 environment:
   sdk: '>=3.9.0 <4.0.0'
@@ -51,5 +51,42 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+  # App icon generation (v0.8.1+17). Dev-only — not needed at runtime,
+  # only when you run the icon-generation command below after a
+  # `flutter pub get`. Verified min Dart SDK 3.0 on pub.dev, well under
+  # this project's 3.9.2 floor. See README "App icon" section for the
+  # one-time command to run.
+  flutter_launcher_icons: ^0.14.4
+
+  # Native splash screen (v0.8.2+18). Fixes the white screen Flutter
+  # shows by default before the engine loads (this is a separate thing
+  # from lib/screens/splash_screen.dart, which only runs *after* the
+  # engine is up and already uses AppColors.background correctly).
+  # Dev-only — see README "Native splash screen" section for the
+  # one-time command.
+  flutter_native_splash: ^2.4.8
+
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/icon.png
+
+# Config read by flutter_launcher_icons. The source image is the
+# finished 1024x1024 master icon (gold play mark + blue segmented ring
+# on the app's navy background) — see README "App icon" section for
+# the exact command to actually generate the launcher icons from it.
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+
+# Config read by flutter_native_splash. Reuses the same master icon,
+# centered on the app's real navy background instead of default white.
+# See README "Native splash screen" section for the exact command.
+flutter_native_splash:
+  color: "#0B132B"
+  image: "assets/icon/icon.png"
+  android_12:
+    color: "#0B132B"
+    image: "assets/icon/icon.png"

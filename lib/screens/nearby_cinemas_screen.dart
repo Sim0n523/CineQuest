@@ -9,7 +9,7 @@ import '../widgets/primary_button.dart';
 import '../widgets/empty_state.dart';
 
 /// Nearby cinemas via device GPS + OpenStreetMap's free Overpass API —
-/// no Google Maps API key or billing account needed (see README).
+/// no Google Maps API key or billing account needed.
 ///
 /// Two modes:
 /// - Browsing (selectionMode: false, default) — reachable from Profile,

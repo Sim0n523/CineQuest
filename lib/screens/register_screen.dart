@@ -37,7 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _passwordController.text,
     );
     if (success && mounted) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.main);
+      Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
     }
   }
 

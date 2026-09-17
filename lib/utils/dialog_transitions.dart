@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Shows a dialog with a scale+fade entrance (with a slight overshoot,
 /// via [Curves.easeOutBack]) instead of Flutter's default abrupt
-/// appearance. Used by RewardDialog and CollectionCompleteDialog — the
-/// two "celebration" moments in the app — so the payoff of the
-/// blueprint's "every movie logged should feel rewarding" philosophy
-/// isn't undercut by the dialog just snapping into existence.
+/// appearance. Used by RewardDialog and CollectionCompleteDialog, the
+/// app's two "celebration" moments.
 Future<T?> showCelebrationDialog<T>(
   BuildContext context, {
   required WidgetBuilder builder,

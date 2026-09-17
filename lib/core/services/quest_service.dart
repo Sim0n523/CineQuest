@@ -4,10 +4,9 @@ import '../models/watch_history_entry.dart';
 import '../../utils/quest_config.dart';
 
 /// Unlike AchievementService (pure computation only), QuestService also
-/// owns Firestore I/O for the quest period docs — matching blueprint
-/// section 7's separate "QuestService" entry, and because "fetch or
-/// generate a fresh set if the period rolled over" genuinely needs a
-/// read (and sometimes a write) that pure computation can't do alone.
+/// owns Firestore I/O for the quest period docs, since "fetch or
+/// generate a fresh set if the period rolled over" needs a read (and
+/// sometimes a write) that pure computation can't do alone.
 class QuestService {
   final FirebaseFirestore _firestore;
 

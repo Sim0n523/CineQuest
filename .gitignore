@@ -17,3 +17,6 @@ build/
 lib/firebase_options.dart
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+
+# Secrets — real TMDB API key. See lib/utils/app_secrets.example.dart.
+lib/utils/app_secrets.dart

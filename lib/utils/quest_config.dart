@@ -33,12 +33,7 @@ class QuestTemplate {
   });
 }
 
-/// Weekly pool — 3 are randomly selected each week. XP reward (250)
-/// matches blueprint section 12 exactly.
-///
-/// Two of the blueprint's own weekly examples ("Watch 3 Horror Movies",
-/// "Watch a Movie Released Before 1990") work as-is with data we
-/// already collect (genreIds, releaseYear on WatchHistoryEntry).
+/// Weekly pool — 3 are randomly selected each week.
 const List<QuestTemplate> weeklyQuestPool = [
   QuestTemplate(
     id: 'weekly_watch_5',
@@ -89,16 +84,8 @@ const List<QuestTemplate> weeklyQuestPool = [
   ),
 ];
 
-/// Monthly pool — 3 are randomly selected each month. XP reward is 1000
-/// (deliberately 4x a weekly quest's 250 — monthly quests take
-/// meaningfully longer and were previously only worth 2x, which didn't
-/// feel proportionate).
-///
-/// The blueprint's own monthly examples "Complete Harry Potter
-/// Collection" and "Watch Movies From Five Countries" are NOT here —
-/// the first needs the Collections system (not built, see README), the
-/// second needs TMDB's production_countries field (nothing fetches or
-/// stores that today). Replaced with quests using data we already have.
+/// Monthly pool — 3 are randomly selected each month. XP reward is 4x
+/// a weekly quest's, since monthly quests take meaningfully longer.
 const List<QuestTemplate> monthlyQuestPool = [
   QuestTemplate(
     id: 'monthly_watch_15',
@@ -140,10 +127,9 @@ const List<QuestTemplate> monthlyQuestPool = [
 
 /// Period boundaries and stable keys used to detect rollover.
 ///
-/// Deliberately NOT true ISO-8601 week numbering — that has real edge
-/// cases around New Year's (week 1 of a year can start in December).
-/// Using "the Monday of the current week" as both the boundary and the
-/// key sidesteps that entirely while still being unique per week.
+/// Deliberately NOT true ISO-8601 week numbering — that has edge cases
+/// around New Year's. Using "the Monday of the current week" as both
+/// the boundary and the key sidesteps that while staying unique per week.
 class QuestPeriodUtils {
   QuestPeriodUtils._();
 

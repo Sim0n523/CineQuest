@@ -14,6 +14,7 @@ import '../widgets/collection_complete_dialog.dart';
 import '../widgets/skeleton_loaders.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/animated_progress_bar.dart';
+import '../themes/app_shadows.dart';
 import 'collection_detail_screen.dart';
 
 class CollectionsScreen extends StatefulWidget {
@@ -136,24 +137,34 @@ class _CollectionCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppShadows.card,
+        ),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: total > 0 && progress.movies.first.posterUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: progress.movies.first.posterUrl!,
-                      width: 56,
-                      height: 84,
-                      fit: BoxFit.cover,
-                    )
-                  : Container(
-                      width: 56,
-                      height: 84,
-                      color: AppColors.surface,
-                      child: Icon(progress.definition.icon, color: AppColors.textSecondary),
-                    ),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: AppShadows.card,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: total > 0 && progress.movies.first.posterUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: progress.movies.first.posterUrl!,
+                        width: 56,
+                        height: 84,
+                        fit: BoxFit.cover,
+                      )
+                    : Container(
+                        width: 56,
+                        height: 84,
+                        color: AppColors.surface,
+                        child: Icon(progress.definition.icon, color: AppColors.textSecondary),
+                      ),
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -177,7 +188,7 @@ class _CollectionCard extends StatelessWidget {
                   AnimatedProgressBar(
                     value: ratio,
                     minHeight: 6,
-                    valueColor: isComplete ? AppColors.success : AppColors.primaryAccent,
+                    valueColor: isComplete ? AppColors.success : AppColors.xp,
                   ),
                   const SizedBox(height: 4),
                   Text('${progress.loggedCount} / $total logged', style: AppTextStyles.caption),

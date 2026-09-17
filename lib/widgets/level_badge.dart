@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
+import '../themes/app_shadows.dart';
 
 class LevelBadge extends StatefulWidget {
   final int level;
@@ -50,13 +51,14 @@ class _LevelBadgeState extends State<LevelBadge> with SingleTickerProviderStateM
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: AppColors.background,
-          border: Border.all(color: AppColors.primaryAccent, width: 2),
+          border: Border.all(color: AppColors.xp, width: 2),
+          boxShadow: AppShadows.card,
         ),
         child: Center(
           child: Text(
             '${widget.level}',
             style: AppTextStyles.caption.copyWith(
-              color: AppColors.primaryAccent,
+              color: AppColors.xp,
               fontWeight: FontWeight.w700,
             ),
           ),

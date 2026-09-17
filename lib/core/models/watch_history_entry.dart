@@ -20,11 +20,9 @@ class WatchHistoryEntry {
   final String? photoPath; // local file path (Camera / Movie Memories)
   final DateTime loggedAt;
 
-  // Snapshotted from MovieModel at log time (see TMDBService.getMovieDetails'
-  // append_to_response=credits) — powers the Behind the Camera / Star
-  // Power achievements. Entries logged before this was added simply
-  // have these as null, same graceful-degradation pattern as photoPath
-  // before Camera existed.
+  // Snapshotted from MovieModel at log time — powers the Behind the
+  // Camera / Star Power achievements. Null on entries logged before
+  // this field existed.
   final int? directorId;
   final String? directorName;
   final int? leadActorId;

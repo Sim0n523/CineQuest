@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/leaderboard_entry.dart';
 
-/// Global XP ranking, per blueprint section 18. Reads directly from the
-/// users collection — Phase 1's Firestore rules already allow any
-/// signed-in user to read any user document, specifically so this
-/// wouldn't need a rules change later.
+/// Global XP ranking. Reads directly from the users collection —
+/// Firestore rules already allow any signed-in user to read any user
+/// document, so this needs no rules change of its own.
 class LeaderboardService {
   final FirebaseFirestore _firestore;
 

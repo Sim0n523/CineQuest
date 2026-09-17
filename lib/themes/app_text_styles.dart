@@ -46,4 +46,16 @@ class AppTextStyles {
         fontWeight: FontWeight.w600,
         color: AppColors.background,
       );
+
+  /// For numbers meant to feel like a payoff, not routine text — XP
+  /// gained, stat tile values, level displays. Larger and heavier than
+  /// h1, with tabular figures so digits don't shift width mid-animation
+  /// (e.g. RewardDialog's XP count-up).
+  static TextStyle get statNumber => GoogleFonts.inter(
+        fontSize: 32,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary,
+        fontFeatures: const [FontFeature.tabularFigures()],
+        height: 1.0,
+      );
 }

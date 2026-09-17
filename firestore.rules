@@ -11,6 +11,16 @@ rules_version = '2';
 // The {subcollection} wildcard below already covers watchHistory and
 // watchlist (and everything added in later phases) — unchanged since
 // Phase 1, nothing new needed here.
+//
+// friendships/{id} (top-level, NOT a users/{uid} subcollection) is new
+// in Phase 6 batch 3. It has to live at the top level rather than
+// under either user's subtree: the users/{userId} write rule below
+// only lets someone write into THEIR OWN subtree, so there's no way
+// for user A to write a request into user B's subcollection that B
+// could then act on (accept/decline) — a top-level doc both users are
+// named on is the only way to make that work without Cloud Functions
+// (which need the paid Blaze plan regardless of usage — off the table,
+// same constraint that shaped Location and Camera).
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
@@ -22,5 +32,30 @@ service cloud.firestore {
         allow write: if request.auth != null && request.auth.uid == userId;
       }
     }
+
+    match /friendships/{friendshipId} {
+      // Only the two people named on a friendship doc can see it —
+      // unlike users/{userId} above, this is deliberately NOT public,
+      // since a pending request isn't something a third party should
+      // be able to browse.
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.participants;
+
+      // Sending a request: you must be one of the two named
+      // participants, you must be the one recorded as the requester,
+      // and it must start out pending — prevents someone creating a
+      // friendship doc as already-"accepted" or on someone else's
+      // behalf.
+      allow create: if request.auth != null
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.requestedBy == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Accepting/declining/unfriending: either named participant can
+      // update or delete the doc.
+      allow update, delete: if request.auth != null
+        && request.auth.uid in resource.data.participants;
+    }
   }
 }
+

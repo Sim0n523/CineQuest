@@ -3,18 +3,12 @@ import 'package:path_provider/path_provider.dart';
 
 /// Persists a captured "movie memory" photo to the app's local
 /// documents directory — no cloud upload, no billing account needed.
-/// Replaces what was originally Firebase Storage; switched after
-/// Firebase Storage dropped its free tier (Feb 2026), which would have
-/// required a billing account just to provision a bucket at all.
 ///
 /// One photo per logged movie; re-capturing for the same movie
-/// overwrites the previous file, matching how the log entry itself
-/// works (one Firestore doc per movie).
+/// overwrites the previous file.
 ///
-/// Trade-off, stated plainly: the photo lives only on this device. It
-/// won't survive an app uninstall/reinstall and won't show up if this
-/// app ever runs on a second device. Fine for a single-device project;
-/// would need a real cloud service again if that ever matters.
+/// Trade-off: the photo lives only on this device and won't survive an
+/// uninstall or show up on a second device.
 class LocalPhotoService {
   Future<String> saveMoviePhoto({required int movieId, required File capturedFile}) async {
     final directory = await getApplicationDocumentsDirectory();
@@ -40,7 +34,6 @@ class LocalPhotoService {
         await file.delete();
       }
     } catch (_) {
-      // Fine if it never existed.
     }
   }
 }

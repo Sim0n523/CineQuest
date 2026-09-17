@@ -45,6 +45,24 @@ class AchievementService {
         return history.where((e) => e.leadActorId != null).map((e) => e.leadActorId).toSet().length;
       case AchievementCategory.collectionsCompleted:
         return collectionsCompleted;
+      case AchievementCategory.moviesWithPhotos:
+        return history.where((e) => (e.photoPath ?? '').trim().isNotEmpty).length;
+      case AchievementCategory.longMovies:
+        return history.where((e) => (e.runtimeMinutes ?? 0) >= 150).length;
+      case AchievementCategory.classicMovies:
+        return history.where((e) => e.releaseYear != null && e.releaseYear! < 1980).length;
+      case AchievementCategory.weekendWatches:
+        return history
+            .where((e) => e.watchDate.weekday == DateTime.saturday || e.watchDate.weekday == DateTime.sunday)
+            .length;
+      case AchievementCategory.genreDevotion:
+        final genreCounts = <int, int>{};
+        for (final entry in history) {
+          for (final genreId in entry.genreIds) {
+            genreCounts[genreId] = (genreCounts[genreId] ?? 0) + 1;
+          }
+        }
+        return genreCounts.values.isEmpty ? 0 : genreCounts.values.reduce((a, b) => a > b ? a : b);
     }
   }
 

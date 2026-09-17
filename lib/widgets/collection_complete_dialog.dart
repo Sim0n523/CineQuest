@@ -102,7 +102,7 @@ class _CollectionCompleteDialogState extends State<CollectionCompleteDialog>
               curve: Curves.easeOutCubic,
               builder: (context, value, _) => Text(
                 '+$value XP',
-                style: AppTextStyles.h3.copyWith(color: AppColors.xp),
+                style: AppTextStyles.statNumber.copyWith(color: AppColors.xp, fontSize: 26),
               ),
             ),
             if (widget.leveledUp) ...[

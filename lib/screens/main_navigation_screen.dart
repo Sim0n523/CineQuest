@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/providers/auth_provider.dart';
 import '../core/providers/watch_history_provider.dart';
+import '../core/providers/friend_provider.dart';
 import 'home_screen.dart';
 import 'discover_screen.dart';
 import 'quests_screen.dart';
@@ -33,6 +34,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final uid = context.read<AuthProvider>().currentUser?.uid;
       if (uid != null) {
         context.read<WatchHistoryProvider>().loadAll(uid);
+        context.read<FriendProvider>().listen(uid);
       }
     });
   }

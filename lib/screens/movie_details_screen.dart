@@ -18,17 +18,13 @@ class MovieDetailsScreen extends StatefulWidget {
   final int movieId;
 
   /// A partial MovieModel already known at the call site (e.g. from the
-  /// list/grid item the user tapped). TMDB's list endpoints already
-  /// include title, backdrop, poster, rating, and overview — the only
-  /// things missing are detail-only fields like runtime. When provided,
-  /// the screen renders real content immediately instead of showing a
-  /// loading state while it re-fetches data it already had; the full
-  /// fetch still runs in the background and fills in the rest silently
-  /// once it resolves.
+  /// list/grid item the user tapped). When provided, the screen renders
+  /// real content immediately instead of a loading state, while the
+  /// full fetch still runs in the background to fill in detail-only
+  /// fields like runtime.
   ///
-  /// Screens that only know a bare movie id (Watch History, Watchlist —
-  /// their Firestore entries don't store a backdrop path) leave this
-  /// null and fall back to the loading state below.
+  /// Screens that only know a bare movie id (Watch History, Watchlist)
+  /// leave this null and fall back to the loading state below.
   final MovieModel? seed;
 
   const MovieDetailsScreen({super.key, required this.movieId, this.seed});
@@ -49,8 +45,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
       if (mounted) setState(() => _movie = full);
     }).catchError((_) {
       // If we already have a seed, keep showing it rather than erroring
-      // out a screen that has perfectly usable content on it — the only
-      // loss is detail-only fields like runtime, which just stay hidden.
+      // out a screen that has perfectly usable content on it.
       if (mounted && _movie == null) setState(() => _fetchFailed = true);
     });
   }
@@ -69,10 +64,8 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     // Built from the id alone (not the fetched/seeded movie) so it's
-    // present from the very first frame — including the loading state —
-    // which is what lets the Hero flight from a list thumbnail actually
-    // fire. A Hero that only appears once data has loaded arrives one
-    // frame too late for the push transition to find it.
+    // present from the very first frame — a Hero tag that only appears
+    // once data has loaded arrives too late for the push transition.
     final heroTag = 'movie_hero_${widget.movieId}';
 
     return Scaffold(

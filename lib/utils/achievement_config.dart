@@ -11,6 +11,11 @@ enum AchievementCategory {
   directorsExplored,
   actorsExplored,
   collectionsCompleted,
+  moviesWithPhotos,
+  longMovies,
+  classicMovies,
+  weekendWatches,
+  genreDevotion,
 }
 
 class AchievementDefinition {
@@ -29,26 +34,11 @@ class AchievementDefinition {
   });
 }
 
-/// Data-driven achievement definitions, per blueprint section 14 ("data
-/// driven whenever possible") and modeled on Clash Royale Masteries —
-/// each has multiple tiers. Movies Watched matches the blueprint's own
-/// example thresholds exactly (1/10/50/100/250/500); the rest follow
-/// the same spirit.
+/// Data-driven achievement definitions — each category has multiple
+/// tiers, computed from AchievementService against watch history.
 ///
-/// 10 of the blueprint's 11 categories are here now (fiveStarRatings,
-/// directorsExplored, actorsExplored, collectionsCompleted are all
-/// post-launch additions, not from the original 11 — user ideas during
-/// a later polish pass). directorsExplored/actorsExplored needed
-/// WatchHistoryEntry extended with director/lead-actor attribution
-/// (snapshotted from MovieModel at log time — see TMDBService.getMovieDetails'
-/// append_to_response=credits); collectionsCompleted needed the
-/// achievement-check loop pulled out of ProgressionService.processMovieLogged
-/// into something checkCollectionCompletion could call too, since that's
-/// the only place this category's value actually changes. Still not
-/// built:
-/// - Streaks — real date-boundary logic, deferred since Phase 2.
-/// - Special Events — needs a product decision on what the events are
-///   before it can be data-driven at all.
+/// Not implemented: Streaks (needs real date-boundary logic) and
+/// Special Events (needs a product decision on what the events are).
 const List<AchievementDefinition> achievementDefinitions = [
   AchievementDefinition(
     category: AchievementCategory.moviesWatched,
@@ -118,10 +108,44 @@ const List<AchievementDefinition> achievementDefinitions = [
     title: 'Collector',
     description: 'Complete curated movie collections',
     icon: Icons.collections_bookmark_rounded,
-    // Deliberately modest — there are 15 collections total right now
-    // (see collection_config.dart). Revisit these if that count grows a
-    // lot; completing "all of them" should stay a real top-tier feat,
-    // not something that caps out with room to spare.
-    tierThresholds: [1, 3, 5, 8, 12, 15],
+    // Top tier is deliberately the literal total collection count (see
+    // collection_config.dart), so "complete them all" is a real top-tier
+    // feat rather than capping out early.
+    tierThresholds: [2, 5, 10, 16, 24, 31],
+  ),
+  AchievementDefinition(
+    category: AchievementCategory.moviesWithPhotos,
+    title: 'Movie Memories',
+    description: 'Attach a photo when logging a movie',
+    icon: Icons.photo_camera_rounded,
+    tierThresholds: [1, 3, 8, 15, 30, 60],
+  ),
+  AchievementDefinition(
+    category: AchievementCategory.longMovies,
+    title: 'Long Haul',
+    description: 'Watch movies 150 minutes or longer',
+    icon: Icons.hourglass_bottom_rounded,
+    tierThresholds: [1, 5, 10, 20, 40, 75],
+  ),
+  AchievementDefinition(
+    category: AchievementCategory.classicMovies,
+    title: 'Old Hollywood',
+    description: 'Watch movies released before 1980',
+    icon: Icons.theaters_outlined,
+    tierThresholds: [1, 3, 8, 15, 30, 50],
+  ),
+  AchievementDefinition(
+    category: AchievementCategory.weekendWatches,
+    title: 'Weekend Warrior',
+    description: 'Watch movies on a Saturday or Sunday',
+    icon: Icons.weekend_rounded,
+    tierThresholds: [1, 5, 15, 30, 60, 100],
+  ),
+  AchievementDefinition(
+    category: AchievementCategory.genreDevotion,
+    title: 'Genre Devotee',
+    description: 'Watch many movies from a single genre — the opposite of Genre Explorer',
+    icon: Icons.favorite_rounded,
+    tierThresholds: [3, 8, 15, 30, 50, 80],
   ),
 ];

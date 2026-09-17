@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../core/providers/auth_provider.dart';
 import '../core/providers/leaderboard_provider.dart';
 import '../core/providers/load_status.dart';
 import '../core/models/leaderboard_entry.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
+import '../themes/app_shadows.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/level_badge.dart';
 import '../widgets/skeleton_loaders.dart';
+import '../widgets/user_avatar.dart';
 import '../widgets/fade_slide_in.dart';
+import 'public_profile_screen.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -110,51 +112,47 @@ class _LeaderboardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isCurrentUser ? AppColors.primaryAccent.withValues(alpha: 0.12) : AppColors.card,
-        borderRadius: BorderRadius.circular(14),
-        border: isCurrentUser ? Border.all(color: AppColors.primaryAccent, width: 1) : null,
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => PublicProfileScreen(uid: entry.uid)),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 30,
-            child: Text(
-              '#${entry.rank}',
-              style: AppTextStyles.body.copyWith(
-                color: entry.rank <= 3 ? AppColors.primaryAccent : AppColors.textSecondary,
-                fontWeight: FontWeight.w700,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isCurrentUser ? AppColors.primaryAccent.withValues(alpha: 0.12) : AppColors.card,
+          borderRadius: BorderRadius.circular(14),
+          border: isCurrentUser ? Border.all(color: AppColors.primaryAccent, width: 1) : null,
+          boxShadow: AppShadows.card,
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 30,
+              child: Text(
+                '#${entry.rank}',
+                style: AppTextStyles.body.copyWith(
+                  color: entry.rank <= 3 ? AppColors.primaryAccent : AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.surface,
-            backgroundImage:
-                entry.avatarUrl != null ? CachedNetworkImageProvider(entry.avatarUrl!) : null,
-            child: entry.avatarUrl == null
-                ? Text(
-                    entry.username.isNotEmpty ? entry.username[0].toUpperCase() : '?',
-                    style: AppTextStyles.body,
-                  )
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              entry.username,
-              style: AppTextStyles.body,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            UserAvatar(avatarBase64: entry.avatarBase64, username: entry.username),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                entry.username,
+                style: AppTextStyles.body,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          LevelBadge(level: entry.level, size: 26),
-          const SizedBox(width: 10),
-          Text('${entry.xp} XP', style: AppTextStyles.caption),
-        ],
+            LevelBadge(level: entry.level, size: 26),
+            const SizedBox(width: 10),
+            Text('${entry.xp} XP', style: AppTextStyles.caption),
+          ],
+        ),
       ),
     );
   }

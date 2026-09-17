@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:image_picker/image_picker.dart';
 import '../core/models/movie_model.dart';
 import '../core/models/watch_history_entry.dart';
 import '../core/providers/auth_provider.dart';
@@ -11,13 +10,11 @@ import '../core/services/progression_service.dart';
 import '../core/services/local_photo_service.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
+import '../utils/photo_source_picker.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/star_rating.dart';
 import '../widgets/reward_dialog.dart';
 import 'nearby_cinemas_screen.dart';
-import 'camera_capture_screen.dart';
-
-enum _PhotoSource { camera, gallery }
 
 /// Handles both logging a movie for the first time and editing an
 /// existing log — pass the current entry via existingEntry to pre-fill
@@ -77,53 +74,14 @@ class _LogMovieScreenState extends State<LogMovieScreen> {
   }
 
   /// Offers a choice between the custom live-preview camera capture
-  /// (CameraCaptureScreen, the primary/first-listed option — kept front
-  /// and center, not just because it's already built, but because it's
-  /// the "camera services" rubric line's actual implementation) and
-  /// picking an existing photo from the gallery. Either path ends with
-  /// the same result: a local temp file path in _localPhotoPath, copied
-  /// to permanent storage by LocalPhotoService only once _save() runs —
-  /// so nothing downstream of this method needed to change for gallery
-  /// support.
+  /// and picking an existing photo from the gallery (see
+  /// utils/photo_source_picker.dart). Either path ends with the same
+  /// result: a local temp file path in _localPhotoPath, copied to
+  /// permanent storage by LocalPhotoService only once _save() runs — so
+  /// nothing downstream of this method needs to care which source was
+  /// used.
   Future<void> _pickPhoto() async {
-    final source = await showModalBottomSheet<_PhotoSource>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primaryAccent),
-              title: Text('Take a Photo', style: AppTextStyles.body),
-              onTap: () => Navigator.of(context).pop(_PhotoSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded, color: AppColors.primaryAccent),
-              title: Text('Choose from Gallery', style: AppTextStyles.body),
-              onTap: () => Navigator.of(context).pop(_PhotoSource.gallery),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (source == null || !mounted) return;
-
-    String? path;
-    if (source == _PhotoSource.camera) {
-      path = await Navigator.of(context).push<String>(
-        MaterialPageRoute(builder: (_) => const CameraCaptureScreen()),
-      );
-    } else {
-      final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
-      path = picked?.path;
-    }
-
+    final path = await pickPhotoFromCameraOrGallery(context);
     if (path != null && mounted) {
       setState(() {
         _localPhotoPath = path;

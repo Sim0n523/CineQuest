@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 /// Every color in the app should come from here — never a hardcoded
 /// hex value in a screen or widget. That's what makes the whole app's
 /// dark, cinematic look retunable from a single file.
-///
-/// Values match the blueprint's palette (section 10) exactly.
 class AppColors {
   AppColors._();
 

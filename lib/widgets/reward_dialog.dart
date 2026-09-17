@@ -6,9 +6,9 @@ import '../utils/dialog_transitions.dart';
 import 'primary_button.dart';
 import 'fade_slide_in.dart';
 
-/// The payoff moment for "every movie logged should feel rewarding"
-/// (blueprint section 2). Shown once, right after a brand-new log —
-/// never on an edit, since no XP or achievements fire there either.
+/// The payoff moment for "every movie logged should feel rewarding".
+/// Shown once, right after a brand-new log — never on an edit, since no
+/// XP or achievements fire there either.
 class RewardDialog extends StatefulWidget {
   final ProgressionResult result;
 
@@ -154,7 +154,7 @@ class _AnimatedXPCounter extends StatelessWidget {
       builder: (context, value, _) {
         return Text(
           '+$value XP',
-          style: AppTextStyles.h3.copyWith(color: AppColors.xp),
+          style: AppTextStyles.statNumber.copyWith(color: AppColors.xp, fontSize: 26),
         );
       },
     );

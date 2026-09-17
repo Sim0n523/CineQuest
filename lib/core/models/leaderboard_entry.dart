@@ -1,7 +1,7 @@
 class LeaderboardEntry {
   final String uid;
   final String username;
-  final String? avatarUrl;
+  final String? avatarBase64;
   final int level;
   final int xp;
   final int rank;
@@ -9,7 +9,7 @@ class LeaderboardEntry {
   const LeaderboardEntry({
     required this.uid,
     required this.username,
-    this.avatarUrl,
+    this.avatarBase64,
     required this.level,
     required this.xp,
     required this.rank,
@@ -19,7 +19,7 @@ class LeaderboardEntry {
     return LeaderboardEntry(
       uid: uid,
       username: map['username'] as String? ?? 'Cinephile',
-      avatarUrl: map['avatarUrl'] as String?,
+      avatarBase64: map['avatarBase64'] as String?,
       level: map['level'] as int? ?? 1,
       xp: map['xp'] as int? ?? 0,
       rank: rank,

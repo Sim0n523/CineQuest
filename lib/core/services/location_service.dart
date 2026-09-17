@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -12,9 +13,8 @@ class LocationException implements Exception {
 }
 
 /// Wraps device GPS (geolocator) and nearby-cinema search (OpenStreetMap's
-/// Overpass API). Deliberately not Google Maps/Places — see README for
-/// why: Overpass needs no API key and no billing account at all, which
-/// matters for a project where that's worth avoiding entirely.
+/// Overpass API). Deliberately not Google Maps/Places — Overpass needs
+/// no API key or billing account.
 class LocationService {
   final http.Client _client;
 
@@ -39,20 +39,34 @@ class LocationService {
       );
     }
 
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
-    );
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+    } on TimeoutException {
+      throw LocationException(
+        "Couldn't get your location — try somewhere with a clearer view of the sky.",
+      );
+    }
   }
 
-  // A few known public Overpass mirrors — the free shared service
-  // (particularly the main overpass-api.de instance) is occasionally
-  // rate-limited or overloaded, so trying alternates before giving up
-  // meaningfully improves reliability over hitting just one endpoint.
+  // Order matters: overpass-api.de currently rejects requests with a
+  // generic User-Agent/Accept header (HTTP 406), so it's kept last as a
+  // fallback rather than dropped, while the two independently-run
+  // mirrors are tried first.
   static const _overpassUrls = [
-    'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
-    'https://lz4.overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
   ];
+
+  static const _requestHeaders = {
+    'User-Agent': 'CineQuest/1.0 (Flutter movie-tracking app, student project)',
+    'Accept': 'application/json, application/osm3s+xml, */*',
+  };
 
   /// Queries OSM's tagged data for amenity=cinema nodes within
   /// [radiusMeters] of the given point.
@@ -64,12 +78,16 @@ class LocationService {
     final query =
         '[out:json][timeout:25];node["amenity"="cinema"](around:$radiusMeters,$latitude,$longitude);out body;';
 
-    Object? lastError;
+    // Mirrors are tried sequentially, capping worst case at 3x this
+    // timeout (~30s) if every mirror fails. errors collects every
+    // mirror's failure, tagged by host, so a report is diagnosable.
+    final errors = <String>[];
     for (final url in _overpassUrls) {
+      final host = Uri.parse(url).host;
       try {
         final response = await _client
-            .post(Uri.parse(url), body: {'data': query})
-            .timeout(const Duration(seconds: 30));
+            .post(Uri.parse(url), headers: _requestHeaders, body: {'data': query})
+            .timeout(const Duration(seconds: 10));
 
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body) as Map<String, dynamic>;
@@ -78,15 +96,15 @@ class LocationService {
               .map((e) => CinemaLocation.fromOverpassJson(e as Map<String, dynamic>))
               .toList();
         }
-        lastError = 'HTTP ${response.statusCode}';
+        errors.add('$host: HTTP ${response.statusCode}');
       } catch (e) {
-        lastError = e;
+        errors.add('$host: $e');
       }
     }
 
     throw LocationException(
       'Could not reach the cinema search service right now — the free '
-      'service may be temporarily busy. Try again in a moment. ($lastError)',
+      'service may be temporarily busy. Try again in a moment.\n(${errors.join(' | ')})',
     );
   }
 }

@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+// quest_service.dart imports this but doesn't re-export it, so it must
+// be imported directly here too for QuestBundle/QuestPeriodState.
+import '../models/quest_period_state.dart';
 import '../models/watch_history_entry.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/xp_config.dart';
 import '../../utils/achievement_config.dart';
 import '../../utils/quest_config.dart';
-import '../models/quest_period_state.dart';
 import 'achievement_service.dart';
 import 'quest_service.dart';
 
@@ -57,11 +59,9 @@ class ProgressionResult {
   });
 }
 
-/// Internal result of running the achievement-tier check — shared
-/// between processMovieLogged and checkCollectionCompletion, since the
-/// collectionsCompleted achievement category can only ever change value
-/// in the latter, but both need the same "did any tier just get
-/// crossed" logic and both write to the same persisted tier docs.
+/// Shared by processMovieLogged and checkCollectionCompletion — both
+/// need the same "did any tier just get crossed" logic against the
+/// same persisted tier docs.
 class _AchievementCheckResult {
   final int xpGained;
   final List<UnlockedAchievement> newlyUnlocked;
@@ -74,18 +74,13 @@ class _AchievementCheckResult {
 }
 
 /// Owns everything that happens when a movie gets logged for the first
-/// time: XP, level recalculation, achievement tier checks, AND quest
-/// completion checks. Nothing else should award XP directly — matches
-/// blueprint section 7: "MovieService should never directly unlock
-/// achievements... everything flows through the ProgressionService."
-/// Quest completion (+250/+1000 XP, reworked from the blueprint's
-/// original +250/+500 — see xp_config.dart) flows through here too, for
-/// the same reason. Collection completion (checkCollectionCompletion)
-/// is a separate entry point but shares the achievement-check logic via
-/// _checkAchievements below.
+/// time: XP, level recalculation, achievement tier checks, and quest
+/// completion. Nothing else should award XP directly. Collection
+/// completion (checkCollectionCompletion) is a separate entry point but
+/// shares the achievement-check logic via _checkAchievements below.
 ///
-/// Only called on a brand-new log, never an edit — see the note on
-/// this class from Phase 3 for why (repeated edits shouldn't farm XP).
+/// Only called on a brand-new log, never an edit, so repeated edits
+/// can't be used to farm XP.
 class ProgressionService {
   final FirebaseFirestore _firestore;
   final QuestService _questService;
@@ -169,7 +164,6 @@ class ProgressionService {
     );
     xpGained += achievementResult.xpGained;
 
-    // --- Quests ---
     final questBundle = await _questService.ensureCurrentQuests(uid);
     final newlyCompletedQuests = <CompletedQuest>[];
 
@@ -193,7 +187,6 @@ class ProgressionService {
       }
     }
 
-    // --- Totals ---
     final newTotalXp = currentXp + xpGained;
     final previousLevel = LevelConfig.levelForXp(currentXp);
     final newLevel = LevelConfig.levelForXp(newTotalXp);
@@ -218,16 +211,10 @@ class ProgressionService {
   }
 
   /// Called from the Collections screen when it detects a collection is
-  /// fully logged — not from processMovieLogged, since checking every
-  /// collection's full movie list against history on every single log
-  /// would mean 5+ extra TMDB round trips per log action. Guarded by a
-  /// persisted `completed` flag so XP is only ever awarded once per
-  /// collection, no matter how many times this gets called.
-  ///
-  /// Also runs the achievement check (history + the just-incremented
-  /// collectionsCompleted) — this is the ONLY place the Collector
-  /// achievement's value can change, since collectionsCompleted never
-  /// moves during a plain movie log.
+  /// fully logged, not from processMovieLogged — checking every
+  /// collection against history on every log would mean several extra
+  /// TMDB round trips per log. Guarded by a persisted `completed` flag
+  /// so XP is only ever awarded once per collection.
   Future<CollectionCompletionResult?> checkCollectionCompletion({
     required String uid,
     required String collectionId,
@@ -243,12 +230,8 @@ class ProgressionService {
 
     await ref.set({'completed': true});
 
-    // Scales with the collection's actual size so a 3-film collection
-    // (Lord of the Rings) doesn't pay out the same as a 30-film one
-    // (Pixar). Computed live off movieCount rather than a stored value,
-    // so if a collection's resolved movie list is ever corrected (e.g.
-    // a filter fix), the reward automatically reflects the corrected
-    // count with no extra work.
+    // Scales with collection size so a 3-film collection doesn't pay
+    // out the same as a 30-film one.
     var xpGained = AppConstants.xpCollectionBase + AppConstants.xpCollectionPerMovie * movieCount;
     final newCollectionsCompleted = currentCollectionsCompleted + 1;
 

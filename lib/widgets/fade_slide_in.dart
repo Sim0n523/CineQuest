@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 /// entries that feel like they're arriving one after another instead
 /// of popping in all at once.
 ///
-/// Safe to use inside `ListView.builder`/`GridView.builder`: each item
-/// only plays its entrance once, the first time that item's State is
-/// created (lazy-built items animate in as they're first scrolled into
-/// view, which reads as an intentional effect rather than a bug).
+/// Caveat: inside `ListView.builder`/`GridView.builder`, a fast fling
+/// through a long list can bring a whole fresh batch of off-screen
+/// items into view at once. Since every item past roughly the 8th
+/// shares the same capped delay, that batch can briefly sit at 0%
+/// opacity together before fading in — reading as "nothing on screen"
+/// rather than a staggered reveal. delay/duration below are kept short
+/// (worst case per batch: ~340ms) to keep that window brief.
 class FadeSlideIn extends StatefulWidget {
   final Widget child;
   final int index;
@@ -19,8 +22,8 @@ class FadeSlideIn extends StatefulWidget {
     super.key,
     required this.child,
     this.index = 0,
-    this.baseDelay = const Duration(milliseconds: 40),
-    this.duration = const Duration(milliseconds: 350),
+    this.baseDelay = const Duration(milliseconds: 15),
+    this.duration = const Duration(milliseconds: 220),
   });
 
   @override
@@ -41,10 +44,10 @@ class _FadeSlideInState extends State<FadeSlideIn> with SingleTickerProviderStat
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
-    // Cap the stagger so long lists don't take forever to finish
-    // appearing — items past ~index 12 all start together.
+    // Cap the stagger so a freshly-scrolled-into-view batch of items
+    // doesn't sit invisible for long — see the class doc comment above.
     final rawDelay = widget.baseDelay * widget.index;
-    const capMs = 480;
+    const capMs = 120;
     final delay = rawDelay.inMilliseconds > capMs
         ? const Duration(milliseconds: capMs)
         : rawDelay;
