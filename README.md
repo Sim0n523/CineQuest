@@ -2,11 +2,7 @@
 
 A gamified movie-tracking app — level up your cinema life.
 
-Version 0.8.2+18 · Flutter · Firebase (Auth + Firestore) · TMDB API
-
-This README mirrors the structure of `CineQuest_Documentation.docx`,
-the full written report. Read that for prose detail; this is the same
-information in scannable form for anyone working in the repo.
+Flutter · Firebase (Auth + Firestore) · TMDB API
 
 ## 1. Overview
 
@@ -203,5 +199,3 @@ dart run flutter_launcher_icons      # app icon, from assets/icon/icon.png
 dart run flutter_native_splash:create # native splash, navy background + same icon
 ```
 
-To revert the splash screen to Flutter's plain white default:
-`dart run flutter_native_splash:remove`.
