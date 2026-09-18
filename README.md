@@ -86,7 +86,7 @@ outcome. XP is only ever awarded on a brand-new log, never an edit.
 | Navigation | 10% | Named routes, 5-tab IndexedStack bottom nav, custom page transitions |
 | More than 7 screens | 10% | 24 screens (see Screen Inventory) |
 | Innovation aspect | 10% | Full gamification layer: XP/Levels, Achievements, Quests, Leaderboard, Collections, Friends |
-| Documentation | 10% | `CineQuest_Documentation.docx` + this README + in-code comments |
+| Documentation | 10% |  this README |
 
 ### 3.1 Innovation — the gamification layer
 
